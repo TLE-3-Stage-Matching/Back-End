@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\CompanyRegistrationController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -18,9 +19,10 @@ Route::prefix('v1')->group(function () {
     });
 
 
-Route::post('/register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
-Route::get('/test', function () {
-    return response()->json([
-        'message' => 'API werkt'
-    ]);
+    Route::post('/register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
+    Route::get('/test', function () {
+        return response()->json([
+            'message' => 'API werkt'
+        ]);
+    });
 });
