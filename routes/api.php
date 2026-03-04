@@ -1,10 +1,11 @@
 <?php
+
 use App\Http\Controllers\CompanyRegistrationController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Api\CoordinatorRegisterController;
-
+use App\Http\Controllers\Api\CoordinatorProfileController;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/register-company', [CompanyRegistrationController::class, 'store']);
@@ -16,11 +17,15 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/refresh', [AuthController::class, 'refresh']);
         Route::apiResource('companies', CompanyController::class);
     });
+    Route::post('/register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
+    Route::get('/test', function () {
+        return response()->json([
+            'message' => 'API werkt'
+        ]);
+    });
+    Route::prefix('v1')->middleware('auth:api')->group(function () {
 
-
-Route::post('/register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
-Route::get('/test', function () {
-    return response()->json([
-        'message' => 'API werkt'
-    ]);
+        Route::get('coordinator/profile', [CoordinatorProfileController::class, 'show']);
+        Route::put('coordinator/profile', [CoordinatorProfileController::class, 'update']);
+    });
 });
