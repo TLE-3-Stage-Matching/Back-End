@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use App\Enums\UserRole;
 
-class RegisterController extends Controller
+class CoordinatorRegisterController extends Controller
 {
     public function registerCoordinator(Request $request): JsonResponse
     {
