@@ -82,7 +82,7 @@ class CompanyRegistrationController extends Controller
                 ],
                 'user' => [
                     'id' => $out['user']->id,
-                    'role' => (string) $out['user']->role,
+                    'role' => $out['user']->role instanceof \BackedEnum ? $out['user']->role->value : $out['user']->role->name,
                     'email' => $out['user']->email,
                     'first_name' => $out['user']->first_name,
                     'middle_name' => $out['user']->middle_name,
