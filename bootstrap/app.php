@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->alias([
             'coordinator' => \App\Http\Middleware\EnsureUserIsCoordinator::class,
+            'company' => \App\Http\Middleware\EnsureUserIsCompany::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

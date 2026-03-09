@@ -26,6 +26,8 @@ class CompanyRegistrationController extends Controller
                 'phone' => $data['company']['phone'] ?? null,
                 'size_category' => $data['company']['size_category'] ?? null,
                 'photo_url' => $data['company']['photo_url'] ?? null,
+                'banner_url' => $data['company']['banner_url'] ?? null,
+                'description' => $data['company']['description'] ?? null,
                 'is_active' => true,
             ]);
 
@@ -76,6 +78,8 @@ class CompanyRegistrationController extends Controller
                     'phone' => $out['company']->phone,
                     'size_category' => $out['company']->size_category,
                     'photo_url' => $out['company']->photo_url,
+                    'banner_url' => $out['company']->banner_url,
+                    'description' => $out['company']->description,
                     'is_active' => (bool) $out['company']->is_active,
                     'created_at' => optional($out['company']->created_at)?->toISOString(),
                     'updated_at' => optional($out['company']->updated_at)?->toISOString(),
