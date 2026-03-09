@@ -15,7 +15,8 @@ For conventions on updating this doc and adding new API functionality, see [CONV
 | Role | Capabilities |
 |------|--------------|
 | **Coordinator** | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list companies/users with filters. |
-| **Company user** | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company’s vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB). |
+| **Company user** | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB). |
+| **Student** | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**. |
 | **Any authenticated** | List **tags** (for vacancy forms); `GET /auth/me` (company users get `company_user` and `company` loaded). |
 
 **Tags:** There is no standalone “create tag” endpoint. Tags are created **inline** when a company user creates or updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy’s `tags` array; the backend uses `firstOrCreate` and persists new tags to the database.
@@ -39,6 +40,13 @@ For conventions on updating this doc and adding new API functionality, see [CONV
   - [My profile](#my-profile) — [Get](#get-my-profile) · [Update](#update-my-profile)
   - [Tags](#tags) — [List tags](#list-tags)
   - [Vacancies (company)](#vacancies-company) — [List](#list-company-vacancies) · [Create](#create-vacancy) · [Get](#get-vacancy) · [Update](#update-vacancy) · [Delete](#delete-vacancy)
+- **Students**
+  - [Student-only endpoints](#student-only-endpoints)
+  - [Student profile](#student-profile) — [Get](#get-student-profile) · [Update](#update-student-profile)
+  - [Student preferences](#student-preferences) — [Get](#get-student-preferences) · [Update](#update-student-preferences)
+  - [Student experiences](#student-experiences) — [List](#list-student-experiences) · [Create](#create-student-experience) · [Update](#update-student-experience) · [Delete](#delete-student-experience)
+  - [Student languages](#student-languages) — [List](#list-student-languages) · [Sync](#sync-student-languages)
+  - [Student tags](#student-tags) — [List](#list-student-tags) · [Sync](#sync-student-tags)
 - **Coordinators**
   - [Coordinator-only endpoints](#coordinator-only-endpoints)
   - [Companies (coordinator)](#companies-coordinator) — [List](#list-companies) · [Create](#create-company) · [Get](#get-company) · [Update](#update-company) · [Delete](#delete-company)
@@ -532,6 +540,406 @@ Deletes the vacancy. The vacancy must belong to the authenticated user's company
 
 ---
 
+## Student-only endpoints
+
+All routes below require:
+
+1. **Valid JWT** in `Authorization: Bearer <token>`.
+2. **Logged-in user role = student.**  
+   Otherwise you get **403** (e.g. "Forbidden. Student role required.").
+
+[↑ Back to index](#index)
+
+---
+
+## Student profile
+
+Students can view and update their own profile (user fields + student_profile).
+
+### Get student profile
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/profile` |
+| **Auth** | Bearer token + student role |
+
+Returns the authenticated student's full profile including experiences, tags, languages, and preferences.
+
+**Success (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "role": "student",
+    "email": "student@example.com",
+    "first_name": "John",
+    "middle_name": null,
+    "last_name": "Doe",
+    "phone": "+31612345678",
+    "profile_photo_url": null,
+    "created_at": "...",
+    "updated_at": "...",
+    "student_profile": {
+      "headline": "Junior Developer",
+      "bio": "Passionate about coding...",
+      "address_line": "Main Street 1",
+      "postal_code": "1234AB",
+      "city": "Amsterdam",
+      "country": "Netherlands",
+      "searching_status": "active",
+      "exclude_demographics": false,
+      "exclude_location": false
+    },
+    "student_experiences": [...],
+    "student_tags": [...],
+    "student_languages": [...],
+    "student_preferences": {...}
+  },
+  "links": { "self": "..." }
+}
+```
+
+---
+
+### Update student profile
+
+| | |
+|---|---|
+| **Method** | `PUT` or `PATCH` |
+| **Path** | `/student/profile` |
+| **Auth** | Bearer token + student role |
+
+Update user fields and/or student profile fields. Only include fields you want to change.
+
+**Request body (all optional):**
+```json
+{
+  "first_name": "John",
+  "middle_name": null,
+  "last_name": "Doe",
+  "phone": "+31612345678",
+  "email": "john.doe@example.com",
+  "password": "newpassword",
+  "headline": "Junior Full-Stack Developer",
+  "bio": "Passionate about building web applications...",
+  "address_line": "Main Street 1",
+  "postal_code": "1234AB",
+  "city": "Amsterdam",
+  "country": "Netherlands",
+  "searching_status": "active",
+  "exclude_demographics": false,
+  "exclude_location": false
+}
+```
+
+| Field | Type | Notes |
+|-------|------|--------|
+| first_name | string | Max 100 |
+| middle_name | string or null | Max 100 |
+| last_name | string | Max 100 |
+| phone | string or null | Max 50 |
+| email | string | Must be unique (excluding current user) |
+| password | string or null | Min 6; omit or null to keep current |
+| headline | string or null | Max 255 |
+| bio | string or null | |
+| address_line | string or null | Max 255 |
+| postal_code | string or null | Max 20 |
+| city | string or null | Max 100 |
+| country | string or null | Max 100 |
+| searching_status | string or null | Max 50 |
+| exclude_demographics | boolean | |
+| exclude_location | boolean | |
+
+**Success (200):** `{ "message": "Profile updated successfully.", "data": <full profile>, "links": {...} }`
+
+[↑ Back to index](#index)
+
+---
+
+## Student preferences
+
+### Get student preferences
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/preferences` |
+| **Auth** | Bearer token + student role |
+
+**Success (200):**
+```json
+{
+  "data": {
+    "desired_role_tag_id": 2,
+    "hours_per_week_min": 32,
+    "hours_per_week_max": 40,
+    "max_distance_km": 50,
+    "has_drivers_license": true,
+    "notes": "Prefer remote work",
+    "desired_role_tag": { "id": 2, "name": "Backend Developer", "tag_type": "role" }
+  },
+  "links": { "self": "..." }
+}
+```
+
+---
+
+### Update student preferences
+
+| | |
+|---|---|
+| **Method** | `PUT` or `PATCH` |
+| **Path** | `/student/preferences` |
+| **Auth** | Bearer token + student role |
+
+**Request body (all optional):**
+```json
+{
+  "desired_role_tag_id": 2,
+  "hours_per_week_min": 32,
+  "hours_per_week_max": 40,
+  "max_distance_km": 50,
+  "has_drivers_license": true,
+  "notes": "Prefer remote work"
+}
+```
+
+| Field | Type | Notes |
+|-------|------|--------|
+| desired_role_tag_id | number or null | Must exist in `tags` |
+| hours_per_week_min | number or null | 1–168 |
+| hours_per_week_max | number or null | 1–168, must be >= min |
+| max_distance_km | number or null | Min 1 |
+| has_drivers_license | boolean | |
+| notes | string or null | |
+
+**Success (200):** `{ "message": "Preferences updated successfully.", "data": <preferences>, "links": {...} }`
+
+[↑ Back to index](#index)
+
+---
+
+## Student experiences
+
+### List student experiences
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/experiences` |
+| **Auth** | Bearer token + student role |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Intern",
+      "company_name": "Acme Corp",
+      "start_date": "2024-01-01",
+      "end_date": "2024-06-30",
+      "description": "Worked on backend systems"
+    }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+---
+
+### Create student experience
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/student/experiences` |
+| **Auth** | Bearer token + student role |
+
+**Request body:**
+```json
+{
+  "title": "Intern",
+  "company_name": "Acme Corp",
+  "start_date": "2024-01-01",
+  "end_date": "2024-06-30",
+  "description": "Worked on backend systems"
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| title | string | Yes | Max 255 |
+| company_name | string | Yes | Max 255 |
+| start_date | date | Yes | Format: YYYY-MM-DD |
+| end_date | date | No | Must be >= start_date |
+| description | string | No | |
+
+**Success (201):** `{ "message": "Experience created successfully.", "data": <experience>, "links": {...} }`
+
+---
+
+### Update student experience
+
+| | |
+|---|---|
+| **Method** | `PUT` or `PATCH` |
+| **Path** | `/student/experiences/{id}` |
+| **Auth** | Bearer token + student role |
+
+**Request body (all optional):**
+```json
+{
+  "title": "Junior Developer",
+  "company_name": "Acme Corp",
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "description": "Updated description..."
+}
+```
+
+**Success (200):** `{ "message": "Experience updated successfully.", "data": <experience>, "links": {...} }`  
+**Error (404):** Experience not found or not owned by you.
+
+---
+
+### Delete student experience
+
+| | |
+|---|---|
+| **Method** | `DELETE` |
+| **Path** | `/student/experiences/{id}` |
+| **Auth** | Bearer token + student role |
+
+**Success (200):** `{ "message": "Experience deleted successfully." }`  
+**Error (404):** Experience not found or not owned by you.
+
+[↑ Back to index](#index)
+
+---
+
+## Student languages
+
+### List student languages
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/languages` |
+| **Auth** | Bearer token + student role |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "language_id": 1,
+      "language_level_id": 3,
+      "is_active": true,
+      "language": { "id": 1, "name": "English" },
+      "language_level": { "id": 3, "name": "Fluent" }
+    }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+---
+
+### Sync student languages
+
+| | |
+|---|---|
+| **Method** | `PUT` |
+| **Path** | `/student/languages` |
+| **Auth** | Bearer token + student role |
+
+Replaces all languages for the student. Send the complete list of languages.
+
+**Request body:**
+```json
+{
+  "languages": [
+    { "language_id": 1, "language_level_id": 3, "is_active": true },
+    { "language_id": 2, "language_level_id": 2 }
+  ]
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| languages | array | Yes | List of language entries |
+| languages.*.language_id | number | Yes | Must exist in `languages` table |
+| languages.*.language_level_id | number | Yes | Must exist in `language_levels` table |
+| languages.*.is_active | boolean | No | Defaults to true |
+
+**Success (200):** `{ "message": "Languages updated successfully.", "data": [...], "links": {...} }`
+
+[↑ Back to index](#index)
+
+---
+
+## Student tags
+
+### List student tags
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/tags` |
+| **Auth** | Bearer token + student role |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "tag_id": 1,
+      "is_active": true,
+      "weight": 5,
+      "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+    }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+---
+
+### Sync student tags
+
+| | |
+|---|---|
+| **Method** | `PUT` |
+| **Path** | `/student/tags` |
+| **Auth** | Bearer token + student role |
+
+Replaces all tags/skills for the student. Send the complete list of tags.
+
+**Request body:**
+```json
+{
+  "tags": [
+    { "tag_id": 1, "is_active": true, "weight": 5 },
+    { "tag_id": 2, "weight": 3 }
+  ]
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| tags | array | Yes | List of tag entries |
+| tags.*.tag_id | number | Yes | Must exist in `tags` table |
+| tags.*.is_active | boolean | No | Defaults to true |
+| tags.*.weight | number | No | 0–100, represents proficiency/priority |
+
+**Success (200):** `{ "message": "Tags updated successfully.", "data": [...], "links": {...} }`
+
+[↑ Back to index](#index)
+
+---
+
 ## Coordinator-only endpoints
 
 All routes below require:
@@ -802,7 +1210,105 @@ Manage **student** and **company** users. For company users, the company must ex
 | **Method** | `GET` |
 | **Path** | `/coordinator/users/{id}` |
 
-**Success (200):** `{ "data": <user object> }`  
+Returns user details. For **students**, includes all related profile data (profile, experiences, tags, languages, preferences, favorite companies, saved vacancies).
+
+**Success (200) – Student:**
+```json
+{
+  "data": {
+    "id": 1,
+    "role": "student",
+    "email": "student@example.com",
+    "first_name": "Test",
+    "middle_name": null,
+    "last_name": "Student",
+    "phone": null,
+    "created_at": "2025-03-09T12:00:00+00:00",
+    "updated_at": "2025-03-09T12:00:00+00:00",
+    "student_profile": {
+      "user_id": 1,
+      "headline": "Junior Developer",
+      "bio": "Passionate about coding...",
+      "address_line": "Main Street 1",
+      "postal_code": "1234AB",
+      "city": "Amsterdam",
+      "country": "Netherlands",
+      "searching_status": "active",
+      "exclude_demographics": false,
+      "exclude_location": false
+    },
+    "student_experiences": [
+      {
+        "id": 1,
+        "title": "Intern",
+        "company_name": "Acme Corp",
+        "start_date": "2024-01-01",
+        "end_date": "2024-06-30",
+        "description": "Worked on backend systems"
+      }
+    ],
+    "student_tags": [
+      {
+        "tag_id": 1,
+        "is_active": true,
+        "weight": 5,
+        "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+      }
+    ],
+    "student_languages": [
+      {
+        "language_id": 1,
+        "language_level_id": 3,
+        "is_active": true,
+        "language": { "id": 1, "name": "English" },
+        "language_level": { "id": 3, "name": "Fluent" }
+      }
+    ],
+    "student_preferences": {
+      "desired_role_tag_id": 2,
+      "hours_per_week_min": 32,
+      "hours_per_week_max": 40,
+      "max_distance_km": 50,
+      "has_drivers_license": true,
+      "notes": "Prefer remote work",
+      "desired_role_tag": { "id": 2, "name": "Backend Developer", "tag_type": "role" }
+    },
+    "student_favorite_companies": [
+      {
+        "company_id": 1,
+        "company": { "id": 1, "name": "Acme Corp" }
+      }
+    ],
+    "student_saved_vacancies": [
+      {
+        "vacancy_id": 1,
+        "removed_at": null,
+        "vacancy": { "id": 1, "title": "Backend Developer", "company_id": 1 }
+      }
+    ]
+  }
+}
+```
+
+**Success (200) – Company user:**
+```json
+{
+  "data": {
+    "id": 2,
+    "role": "company",
+    "email": "hr@acme.com",
+    "first_name": "Jane",
+    "middle_name": null,
+    "last_name": "Doe",
+    "phone": null,
+    "created_at": "2025-03-09T12:00:00+00:00",
+    "updated_at": "2025-03-09T12:00:00+00:00",
+    "company_user": { "company_id": 1, "job_title": "HR Manager" },
+    "company": { "id": 1, "name": "Acme Corp" }
+  }
+}
+```
+
 **Error (404):** `{ "message": "User not found." }` (e.g. id is not a student/company user).
 
 ---

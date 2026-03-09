@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Company\VacancyController as CompanyVacancyControll
 use App\Http\Controllers\Api\Coordinator\CoordinatorVacancyController;
 use App\Http\Controllers\Api\CoordinatorRegisterController;
 use App\Http\Controllers\Api\StageCoordinatorUserController;
+use App\Http\Controllers\Api\Student\StudentProfileController;
 use App\Http\Controllers\Api\TagController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,31 @@ Route::prefix('v1')->group(function () {
             Route::get('company/vacancies/{vacancy}', [CompanyVacancyController::class, 'show']);
             Route::match(['put', 'patch'], 'company/vacancies/{vacancy}', [CompanyVacancyController::class, 'update']);
             Route::delete('company/vacancies/{vacancy}', [CompanyVacancyController::class, 'destroy']);
+        });
+
+        // Student-only: own profile, experiences, preferences, languages, tags
+        Route::middleware('student')->group(function () {
+            // Profile (user + student_profile)
+            Route::get('student/profile', [StudentProfileController::class, 'show']);
+            Route::match(['put', 'patch'], 'student/profile', [StudentProfileController::class, 'update']);
+
+            // Preferences
+            Route::get('student/preferences', [StudentProfileController::class, 'showPreferences']);
+            Route::match(['put', 'patch'], 'student/preferences', [StudentProfileController::class, 'updatePreferences']);
+
+            // Experiences (CRUD)
+            Route::get('student/experiences', [StudentProfileController::class, 'listExperiences']);
+            Route::post('student/experiences', [StudentProfileController::class, 'storeExperience']);
+            Route::match(['put', 'patch'], 'student/experiences/{experience}', [StudentProfileController::class, 'updateExperience']);
+            Route::delete('student/experiences/{experience}', [StudentProfileController::class, 'destroyExperience']);
+
+            // Languages (sync)
+            Route::get('student/languages', [StudentProfileController::class, 'listLanguages']);
+            Route::put('student/languages', [StudentProfileController::class, 'syncLanguages']);
+
+            // Tags/Skills (sync)
+            Route::get('student/tags', [StudentProfileController::class, 'listTags']);
+            Route::put('student/tags', [StudentProfileController::class, 'syncTags']);
         });
 
         // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users)
