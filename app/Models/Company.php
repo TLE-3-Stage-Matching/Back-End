@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
+    /**
+     * Scope to only active (approved) companies.
+     * Use for any listing that should show companies to students/public.
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where('is_active', true);
+    }
+
     protected $fillable = [
         'name',
         'industry_tag_id',

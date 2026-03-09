@@ -26,6 +26,14 @@ class StageCoordinatorUserController extends Controller
             $query->where('role', $request->role);
         }
 
+        // When active_companies_only=1, only return company users whose company is active (and all students)
+        if ($request->boolean('active_companies_only')) {
+            $query->where(function ($q) {
+                $q->where('role', UserRole::Student)
+                    ->orWhereHas('companyUser.company', fn ($cq) => $cq->where('is_active', true));
+            });
+        }
+
         $users = $query->orderBy('created_at', 'desc')->paginate(
             $request->integer('per_page', 15)
         );

@@ -26,7 +26,7 @@ class CompanyRegistrationController extends Controller
                 'phone' => $data['company']['phone'] ?? null,
                 'size_category' => $data['company']['size_category'] ?? null,
                 'photo_url' => $data['company']['photo_url'] ?? null,
-                'is_active' => true,
+                'is_active' => false, // Pending until stage coordinator approves
             ]);
 
             // 2) Create user WITH password_hash (required / NOT NULL)

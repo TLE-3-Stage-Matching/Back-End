@@ -10,10 +10,14 @@
 
 - [Authentication](#authentication)
   - [1. Register as coordinator](#1-register-as-coordinator-stage-coordinator)
-  - [2. Login (get JWT)](#2-login-get-jwt)
-  - [3. Current user (me)](#3-current-user-me)
-  - [4. Logout](#4-logout)
-  - [5. Refresh token](#5-refresh-token)
+  - [2. Register as company (self-registration)(Team A)](#2-register-as-company-self-registration-team-a-only)
+  - [3. Login (get JWT)](#3-login-get-jwt)
+  - [4. Current user (me)](#4-current-user-me)
+  - [5. Logout](#5-logout)
+  - [6. Refresh token](#6-refresh-token)
+- [Public data (no auth)](#public-data-no-auth)
+  - [List active companies](#list-active-companies)
+  - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
 - [Coordinator-only endpoints](#coordinator-only-endpoints)
 - [Companies (coordinator)](#companies-coordinator)
   - [List companies](#list-companies)
@@ -44,7 +48,9 @@ Creates a new coordinator account. No auth required.
 | **Path** | `/auth/register/coordinator` |
 | **Auth** | None |
 
-**Request body:**
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
 ```json
 {
   "email": "coordinator@example.com",
@@ -54,6 +60,8 @@ Creates a new coordinator account. No auth required.
 }
 ```
 
+</details>
+
 | Field | Type | Required | Notes |
 |-------|------|----------|--------|
 | email | string | Yes | Must be unique |
@@ -61,7 +69,9 @@ Creates a new coordinator account. No auth required.
 | first_name | string | Yes | |
 | last_name | string | Yes | |
 
-**Success (201):**
+<details>
+<summary><strong>Success (201) – Response body (JSON)</strong></summary>
+
 ```json
 {
   "message": "Coordinator account succesvol aangemaakt",
@@ -76,9 +86,81 @@ Creates a new coordinator account. No auth required.
 }
 ```
 
+</details>
+
 ---
 
-### 2. Login (get JWT)
+### 2. Register as company (self-registration) (Team A only)
+
+Companies can register themselves. The company is created with `is_active: false` and does not appear in public company/vacancy listings until a **stage coordinator** approves it by setting `is_active` to `true` via [Update company](#update-company).
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/auth/register/company` |
+| **Auth** | None |
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "company": {
+    "name": "Acme Corp",
+    "industry_tag_id": null,
+    "email": "info@acme.com",
+    "phone": "+31201234567",
+    "size_category": null,
+    "photo_url": null
+  },
+  "location": {
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "address_line": "Main Street 1",
+    "postal_code": "1012 AB",
+    "lat": 52.3676,
+    "lon": 4.9041
+  },
+  "user": {
+    "email": "contact@acme.com",
+    "first_name": "Jan",
+    "middle_name": null,
+    "last_name": "Jansen",
+    "phone": "+31612345678"
+  },
+  "password": "securepassword123",
+  "password_confirmation": "securepassword123"
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| company.name | string | Yes | Max 255 |
+| company.industry_tag_id | number | No | Must exist in `tags` |
+| company.email | string | No | Email, max 255 |
+| company.phone | string | No | Max 50 |
+| company.size_category | string | No | Max 50 |
+| company.photo_url | string | No | |
+| location.city | string | Yes | |
+| location.country | string | Yes | |
+| location.address_line | string | No | |
+| location.postal_code | string | No | Max 32 |
+| location.lat | number | No | |
+| location.lon | number | No | |
+| user.email | string | Yes | Unique |
+| user.first_name | string | Yes | Max 100 |
+| user.middle_name | string | No | Max 100 |
+| user.last_name | string | Yes | Max 100 |
+| user.phone | string | No | Max 50 |
+| password | string | Yes | Min 12, must be confirmed |
+
+**Success (201):** Returns `data` (company, user, location) and `meta.token` / `meta.token_type` for immediate login.
+
+---
+
+### 3. Login (get JWT)
 
 Returns a JWT for all subsequent protected requests.
 
@@ -88,7 +170,9 @@ Returns a JWT for all subsequent protected requests.
 | **Path** | `/auth/login` |
 | **Auth** | None |
 
-**Request body:**
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
 ```json
 {
   "email": "coordinator@example.com",
@@ -96,13 +180,19 @@ Returns a JWT for all subsequent protected requests.
 }
 ```
 
-**Success (200):**
+</details>
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
 ```json
 {
   "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
   "token_type": "Bearer"
 }
 ```
+
+</details>
 
 **Error (401):** `{ "message": "Invalid credentials" }`
 
@@ -113,7 +203,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 3. Current user (me)
+### 4. Current user (me)
 
 | | |
 |---|---|
@@ -125,7 +215,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 4. Logout
+### 5. Logout
 
 | | |
 |---|---|
@@ -137,7 +227,7 @@ Authorization: Bearer <token>
 
 ---
 
-### 5. Refresh token
+### 6. Refresh token
 
 | | |
 |---|---|
@@ -146,6 +236,36 @@ Authorization: Bearer <token>
 | **Auth** | Bearer token required |
 
 **Success (200):** Same shape as login: `{ "token": "...", "token_type": "Bearer" }`
+
+---
+
+## Public data (no auth)
+
+These endpoints return only **active** (coordinator-approved) companies and their vacancies. Use them for student/public frontends. Companies that registered via [Register as company](#2-register-as-company-self-registration-team-a-only) do not appear here until a stage coordinator sets their `is_active` to `true`.
+
+### List active companies
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/companies` |
+| **Auth** | None |
+
+**Success (200):** `{ "data": [ <company objects> ], "links": { "self": "..." } }` — only companies with `is_active: true`.
+
+---
+
+### List vacancies (active companies only)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/vacancies` |
+| **Auth** | None |
+
+**Query parameters:** `per_page` (number, default 15) for pagination.
+
+**Success (200):** `{ "data": [ <vacancy objects> ], "meta": { "current_page", "last_page", "per_page", "total" }, "links": { "self": "..." } }` — only vacancies belonging to active companies.
 
 ---
 
@@ -170,7 +290,9 @@ Create and manage companies first; then add company users by `company_id`.
 | **Method** | `GET` |
 | **Path** | `/coordinator/companies` |
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
 ```json
 {
   "data": [
@@ -191,6 +313,8 @@ Create and manage companies first; then add company users by `company_id`.
 }
 ```
 
+</details>
+
 ---
 
 ### Create company
@@ -200,7 +324,9 @@ Create and manage companies first; then add company users by `company_id`.
 | **Method** | `POST` |
 | **Path** | `/coordinator/companies` |
 
-**Request body:**
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
 ```json
 {
   "name": "Acme Corp",
@@ -212,6 +338,8 @@ Create and manage companies first; then add company users by `company_id`.
   "is_active": true
 }
 ```
+
+</details>
 
 | Field | Type | Required | Notes |
 |-------|------|----------|--------|
@@ -247,7 +375,22 @@ Use `data.id` as `company_id` when creating a company user.
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/coordinator/companies/{id}` |
 
-**Request body:** Same fields as create; all optional. Only send fields you want to change.
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+Same fields as [Create company](#create-company); all optional. Only send fields you want to change.
+
+```json
+{
+  "is_active": true,
+  "name": "Acme Corp",
+  "email": "info@acme.com"
+}
+```
+
+</details>
+
+**Approving self-registered companies:** Set `is_active` to `true` to approve a company. Until then, that company and its users/vacancies are excluded from [List active companies](#list-active-companies) and [List vacancies](#list-vacancies-active-companies-only).
 
 **Success (200):** `{ "data": <updated company> }`
 
@@ -281,10 +424,14 @@ Manage **student** and **company** users. For company users, the company must ex
 |-------|------|---------|-------------|
 | role | string | — | `student` or `company` to filter |
 | per_page | number | 15 | Pagination size |
+| active_companies_only | boolean | false | If `1` or `true`, only return students and company users whose company is active (useful when listing users for display). Omit to see all users for management. |
 
-**Example:** `GET /coordinator/users?role=student&per_page=10`
+**Example:** `GET /coordinator/users?role=student&per_page=10`  
+**Example (only active companies’ users):** `GET /coordinator/users?active_companies_only=1`
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
 ```json
 {
   "data": [
@@ -323,6 +470,8 @@ Manage **student** and **company** users. For company users, the company must ex
 }
 ```
 
+</details>
+
 ---
 
 ### Create user (student or company)
@@ -332,7 +481,9 @@ Manage **student** and **company** users. For company users, the company must ex
 | **Method** | `POST` |
 | **Path** | `/coordinator/users` |
 
-**Student – request body:**
+<details>
+<summary><strong>Request body – Student (JSON)</strong></summary>
+
 ```json
 {
   "role": "student",
@@ -345,7 +496,11 @@ Manage **student** and **company** users. For company users, the company must ex
 }
 ```
 
-**Company user – request body:**
+</details>
+
+<details>
+<summary><strong>Request body – Company user (JSON)</strong></summary>
+
 ```json
 {
   "role": "company",
@@ -360,6 +515,8 @@ Manage **student** and **company** users. For company users, the company must ex
 }
 ```
 
+</details>
+
 | Field | Type | Required | Notes |
 |-------|------|----------|--------|
 | role | string | Yes | `"student"` or `"company"` |
@@ -372,13 +529,17 @@ Manage **student** and **company** users. For company users, the company must ex
 | company_id | number | Yes if role=company | Must exist in `companies` |
 | job_title | string | No | Max 255, for company only |
 
-**Success (201):**
+<details>
+<summary><strong>Success (201) – Response body (JSON)</strong></summary>
+
 ```json
 {
   "message": "User created successfully.",
   "data": { <user object, same shape as list/show> }
 }
 ```
+
+</details>
 
 **Errors:** 422 validation errors (e.g. duplicate email, missing `company_id` for company role).
 
@@ -403,7 +564,10 @@ Manage **student** and **company** users. For company users, the company must ex
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/coordinator/users/{id}` |
 
-**Request body:** Only include fields to update.
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+Only include fields to update.
 
 ```json
 {
@@ -417,6 +581,8 @@ Manage **student** and **company** users. For company users, the company must ex
 
 For **company** users you can also send `company_id` and `job_title`.  
 Omit `password` or send `null` to leave it unchanged.
+
+</details>
 
 **Success (200):** `{ "message": "User updated successfully.", "data": <user> }`
 
@@ -443,6 +609,8 @@ Omit `password` or send `null` to leave it unchanged.
 5. **Create student** → `POST /coordinator/users` with `role: "student"` (no `company_id`)
 
 Use the same Bearer token for all requests in steps 3–5.
+
+**Approving self-registered companies (Team A only):** Companies that registered via `POST /auth/register/company` start with `is_active: false`. To approve, use `PATCH /coordinator/companies/{id}` with `{ "is_active": true }`. Only active companies appear in `GET /companies` and `GET /vacancies`, and only their users when using `GET /coordinator/users?active_companies_only=1`.
 
 ---
 
