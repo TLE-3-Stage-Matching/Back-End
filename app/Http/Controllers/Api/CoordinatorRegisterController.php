@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use App\Enums\UserRole;
 
@@ -26,7 +25,7 @@ class CoordinatorRegisterController extends Controller
         $user = User::create([
             'role' => UserRole::Coordinator,
             'email' => $validated['email'],
-            'password_hash' => Hash::make($validated['password']),
+            'password_hash' => $validated['password'],
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
         ]);

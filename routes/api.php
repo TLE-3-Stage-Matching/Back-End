@@ -1,28 +1,28 @@
 <?php
 
-use App\Http\Controllers\CompanyRegistrationController;
 use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Api\CoordinatorRegisterController;
-
+use App\Http\Controllers\Api\StageCoordinatorUserController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    Route::post('auth/register-company', [CompanyRegistrationController::class, 'store']);
+    // Public: register as stage coordinator
+    Route::post('auth/register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
+
+    // Public: login (returns JWT)
     Route::post('auth/login', [AuthController::class, 'login']);
 
+    // Protected: auth (JWT)
     Route::middleware('auth:api')->group(function () {
-        Route::get('me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::post('auth/refresh', [AuthController::class, 'refresh']);
-        Route::apiResource('companies', CompanyController::class);
-    });
+        Route::get('auth/me', [AuthController::class, 'me']);
 
-
-    Route::post('/register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
-    Route::get('/test', function () {
-        return response()->json([
-            'message' => 'API werkt'
-        ]);
+        // Coordinator-only: CRUD companies, then CRUD users (students + company users)
+        Route::middleware('coordinator')->group(function () {
+            Route::apiResource('coordinator/companies', CompanyController::class);
+            Route::apiResource('coordinator/users', StageCoordinatorUserController::class);
+        });
     });
 });
