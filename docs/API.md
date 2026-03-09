@@ -221,6 +221,8 @@ Update your company. Only include fields you want to change.
   "phone": "+31201234567",
   "size_category": "medium",
   "photo_url": null,
+  "banner_url": null,
+  "description": null,
   "is_active": true
 }
 ```
@@ -233,6 +235,8 @@ Update your company. Only include fields you want to change.
 | phone | string | Max 50 |
 | size_category | string | Max 50 |
 | photo_url | string | |
+| banner_url | string | Max 512 |
+| description | string | |
 | is_active | boolean | |
 
 **Success (200):** `{ "data": <updated company>, "links": { "self": "..." } }`
@@ -574,6 +578,8 @@ Create and manage companies first; then add company users by `company_id`.
       "phone": null,
       "size_category": null,
       "photo_url": null,
+      "banner_url": null,
+      "description": null,
       "is_active": true,
       "created_at": "...",
       "updated_at": "..."
@@ -607,6 +613,8 @@ Create and manage companies first; then add company users by `company_id`.
   "phone": "+31201234567",
   "size_category": null,
   "photo_url": null,
+  "banner_url": null,
+  "description": null,
   "is_active": true
 }
 ```
@@ -619,6 +627,8 @@ Create and manage companies first; then add company users by `company_id`.
 | phone | string | No | Max 50 |
 | size_category | string | No | Max 50 |
 | photo_url | string | No | |
+| banner_url | string | No | Max 512 |
+| description | string | No | |
 | is_active | boolean | No | Defaults to `true` |
 
 **Success (201):** `{ "data": <company object> }`  

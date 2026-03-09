@@ -46,6 +46,8 @@ class CompanyController extends Controller
             'phone' => ['nullable','string','max:50'],
             'size_category' => ['nullable','string','max:50'],
             'photo_url' => ['nullable','string'],
+            'banner_url' => ['nullable','string','max:512'],
+            'description' => ['nullable','string'],
             'is_active' => ['sometimes','boolean'],
         ]);
 
@@ -74,6 +76,8 @@ class CompanyController extends Controller
             'phone' => ['nullable','string','max:50'],
             'size_category' => ['nullable','string','max:50'],
             'photo_url' => ['nullable','string'],
+            'banner_url' => ['nullable','string','max:512'],
+            'description' => ['nullable','string'],
             'is_active' => ['sometimes','boolean'],
         ]);
 

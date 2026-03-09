@@ -32,7 +32,7 @@ class CompanyAccountController extends Controller
         $company = $request->user()->companyUser->company;
         $company->update($request->only([
             'name', 'industry_tag_id', 'email', 'phone',
-            'size_category', 'photo_url', 'is_active',
+            'size_category', 'photo_url', 'banner_url', 'description', 'is_active',
         ]));
 
         return response()->json([

@@ -29,6 +29,8 @@ class RegisterCompanyRequest extends FormRequest
             'company.phone' => ['nullable','string','max:50'],
             'company.size_category' => ['nullable','string','max:50'],
             'company.photo_url' => ['nullable','string'],
+            'company.banner_url' => ['nullable','string','max:512'],
+            'company.description' => ['nullable','string'],
 
             'location.city' => ['required','string','max:255'],
             'location.country' => ['required','string','max:255'],

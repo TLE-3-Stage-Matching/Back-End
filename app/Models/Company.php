@@ -16,6 +16,8 @@ class Company extends Model
         'phone',
         'size_category',
         'photo_url',
+        'banner_url',
+        'description',
         'is_active',
     ];
 
