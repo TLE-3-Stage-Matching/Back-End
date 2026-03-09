@@ -12,7 +12,7 @@ class CoordinatorProfileController extends Controller
 {
     public function show(): JsonResponse
     {
-        $user = auth()->user();
+        $user = \App\Models\User::where('role', \App\Enums\UserRole::Coordinator)->first();
 
         if ($user->role !== UserRole::Coordinator) {
             return response()->json([
@@ -25,14 +25,14 @@ class CoordinatorProfileController extends Controller
         ]);
 
         return response()->json([
-            'data' => [
-                'role' => $user->role,
-                'first_name' => $user->first_name,
-                'middle_name' => $user->middle_name,
-                'last_name' => $user->last_name,
-                'email' => $user->email,
-                'profile_photo_url' => $user->profile_photo_url
-            ],
+            'data' => $user->only([
+                'role',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'email',
+                'profile_photo_url'
+            ]),
             'links' => [
                 'self' => url('/api/v1/coordinator/profile')
             ]
@@ -41,7 +41,7 @@ class CoordinatorProfileController extends Controller
 
     public function update(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = \App\Models\User::where('role', \App\Enums\UserRole::Coordinator)->first();
 
         if ($user->role !== UserRole::Coordinator) {
             return response()->json([

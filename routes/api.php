@@ -17,15 +17,10 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/refresh', [AuthController::class, 'refresh']);
         Route::apiResource('companies', CompanyController::class);
     });
-    Route::post('/register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
-    Route::get('/test', function () {
-        return response()->json([
-            'message' => 'API werkt'
-        ]);
+    Route::post('register/coordinator', [CoordinatorRegisterController::class, 'registerCoordinator']);
+    Route::get('test', function () {
+        return response()->json(['message' => 'API werkt']);
     });
-    Route::prefix('v1')->middleware('auth:api')->group(function () {
-
-        Route::get('coordinator/profile', [CoordinatorProfileController::class, 'show']);
-        Route::put('coordinator/profile', [CoordinatorProfileController::class, 'update']);
-    });
+    Route::get('coordinator/profile', [CoordinatorProfileController::class, 'show']);
+    Route::patch('coordinator/profile', [CoordinatorProfileController::class, 'update']);
 });
