@@ -29,7 +29,7 @@ class CompanyController extends Controller
             'is_active' => ['sometimes','boolean'],
         ]);
 
-        $company = Company::create($data);
+        $company = Company::create(array_merge(['is_active' => true], $data));
 
         return response()->json(['data' => $company], 201);
     }
