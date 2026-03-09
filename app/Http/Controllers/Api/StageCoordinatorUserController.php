@@ -104,7 +104,20 @@ class StageCoordinatorUserController extends Controller
             return response()->json(['message' => 'User not found.'], 404);
         }
 
-        $user->load(['companyUser.company', 'studentProfile']);
+        if ($user->role === UserRole::Student) {
+            $user->load([
+                'studentProfile',
+                'studentExperiences',
+                'studentTags.tag',
+                'studentLanguages.language',
+                'studentLanguages.languageLevel',
+                'studentPreferences.desiredRoleTag',
+                'studentFavoriteCompanies.company',
+                'studentSavedVacancies.vacancy',
+            ]);
+        } else {
+            $user->load(['companyUser.company']);
+        }
 
         return response()->json(['data' => $this->formatUser($user)]);
     }
@@ -199,7 +212,96 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($user->relationLoaded('studentProfile') && $user->studentProfile) {
-            $data['student_profile'] = ['user_id' => $user->studentProfile->user_id];
+            $data['student_profile'] = [
+                'user_id' => $user->studentProfile->user_id,
+                'headline' => $user->studentProfile->headline,
+                'bio' => $user->studentProfile->bio,
+                'address_line' => $user->studentProfile->address_line,
+                'postal_code' => $user->studentProfile->postal_code,
+                'city' => $user->studentProfile->city,
+                'country' => $user->studentProfile->country,
+                'searching_status' => $user->studentProfile->searching_status,
+                'exclude_demographics' => $user->studentProfile->exclude_demographics,
+                'exclude_location' => $user->studentProfile->exclude_location,
+            ];
+        }
+
+        if ($user->relationLoaded('studentExperiences')) {
+            $data['student_experiences'] = $user->studentExperiences->map(fn ($exp) => [
+                'id' => $exp->id,
+                'title' => $exp->title,
+                'company_name' => $exp->company_name,
+                'start_date' => $exp->start_date?->toDateString(),
+                'end_date' => $exp->end_date?->toDateString(),
+                'description' => $exp->description,
+            ])->toArray();
+        }
+
+        if ($user->relationLoaded('studentTags')) {
+            $data['student_tags'] = $user->studentTags->map(fn ($st) => [
+                'tag_id' => $st->tag_id,
+                'is_active' => $st->is_active,
+                'weight' => $st->weight,
+                'tag' => $st->relationLoaded('tag') && $st->tag ? [
+                    'id' => $st->tag->id,
+                    'name' => $st->tag->name,
+                    'tag_type' => $st->tag->tag_type,
+                ] : null,
+            ])->toArray();
+        }
+
+        if ($user->relationLoaded('studentLanguages')) {
+            $data['student_languages'] = $user->studentLanguages->map(fn ($sl) => [
+                'language_id' => $sl->language_id,
+                'language_level_id' => $sl->language_level_id,
+                'is_active' => $sl->is_active,
+                'language' => $sl->relationLoaded('language') && $sl->language ? [
+                    'id' => $sl->language->id,
+                    'name' => $sl->language->name,
+                ] : null,
+                'language_level' => $sl->relationLoaded('languageLevel') && $sl->languageLevel ? [
+                    'id' => $sl->languageLevel->id,
+                    'name' => $sl->languageLevel->name,
+                ] : null,
+            ])->toArray();
+        }
+
+        if ($user->relationLoaded('studentPreferences') && $user->studentPreferences) {
+            $data['student_preferences'] = [
+                'desired_role_tag_id' => $user->studentPreferences->desired_role_tag_id,
+                'hours_per_week_min' => $user->studentPreferences->hours_per_week_min,
+                'hours_per_week_max' => $user->studentPreferences->hours_per_week_max,
+                'max_distance_km' => $user->studentPreferences->max_distance_km,
+                'has_drivers_license' => $user->studentPreferences->has_drivers_license,
+                'notes' => $user->studentPreferences->notes,
+                'desired_role_tag' => $user->studentPreferences->relationLoaded('desiredRoleTag') && $user->studentPreferences->desiredRoleTag ? [
+                    'id' => $user->studentPreferences->desiredRoleTag->id,
+                    'name' => $user->studentPreferences->desiredRoleTag->name,
+                    'tag_type' => $user->studentPreferences->desiredRoleTag->tag_type,
+                ] : null,
+            ];
+        }
+
+        if ($user->relationLoaded('studentFavoriteCompanies')) {
+            $data['student_favorite_companies'] = $user->studentFavoriteCompanies->map(fn ($fc) => [
+                'company_id' => $fc->company_id,
+                'company' => $fc->relationLoaded('company') && $fc->company ? [
+                    'id' => $fc->company->id,
+                    'name' => $fc->company->name,
+                ] : null,
+            ])->toArray();
+        }
+
+        if ($user->relationLoaded('studentSavedVacancies')) {
+            $data['student_saved_vacancies'] = $user->studentSavedVacancies->map(fn ($sv) => [
+                'vacancy_id' => $sv->vacancy_id,
+                'removed_at' => $sv->removed_at?->toIso8601String(),
+                'vacancy' => $sv->relationLoaded('vacancy') && $sv->vacancy ? [
+                    'id' => $sv->vacancy->id,
+                    'title' => $sv->vacancy->title,
+                    'company_id' => $sv->vacancy->company_id,
+                ] : null,
+            ])->toArray();
         }
 
         return $data;

@@ -802,7 +802,105 @@ Manage **student** and **company** users. For company users, the company must ex
 | **Method** | `GET` |
 | **Path** | `/coordinator/users/{id}` |
 
-**Success (200):** `{ "data": <user object> }`  
+Returns user details. For **students**, includes all related profile data (profile, experiences, tags, languages, preferences, favorite companies, saved vacancies).
+
+**Success (200) – Student:**
+```json
+{
+  "data": {
+    "id": 1,
+    "role": "student",
+    "email": "student@example.com",
+    "first_name": "Test",
+    "middle_name": null,
+    "last_name": "Student",
+    "phone": null,
+    "created_at": "2025-03-09T12:00:00+00:00",
+    "updated_at": "2025-03-09T12:00:00+00:00",
+    "student_profile": {
+      "user_id": 1,
+      "headline": "Junior Developer",
+      "bio": "Passionate about coding...",
+      "address_line": "Main Street 1",
+      "postal_code": "1234AB",
+      "city": "Amsterdam",
+      "country": "Netherlands",
+      "searching_status": "active",
+      "exclude_demographics": false,
+      "exclude_location": false
+    },
+    "student_experiences": [
+      {
+        "id": 1,
+        "title": "Intern",
+        "company_name": "Acme Corp",
+        "start_date": "2024-01-01",
+        "end_date": "2024-06-30",
+        "description": "Worked on backend systems"
+      }
+    ],
+    "student_tags": [
+      {
+        "tag_id": 1,
+        "is_active": true,
+        "weight": 5,
+        "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+      }
+    ],
+    "student_languages": [
+      {
+        "language_id": 1,
+        "language_level_id": 3,
+        "is_active": true,
+        "language": { "id": 1, "name": "English" },
+        "language_level": { "id": 3, "name": "Fluent" }
+      }
+    ],
+    "student_preferences": {
+      "desired_role_tag_id": 2,
+      "hours_per_week_min": 32,
+      "hours_per_week_max": 40,
+      "max_distance_km": 50,
+      "has_drivers_license": true,
+      "notes": "Prefer remote work",
+      "desired_role_tag": { "id": 2, "name": "Backend Developer", "tag_type": "role" }
+    },
+    "student_favorite_companies": [
+      {
+        "company_id": 1,
+        "company": { "id": 1, "name": "Acme Corp" }
+      }
+    ],
+    "student_saved_vacancies": [
+      {
+        "vacancy_id": 1,
+        "removed_at": null,
+        "vacancy": { "id": 1, "title": "Backend Developer", "company_id": 1 }
+      }
+    ]
+  }
+}
+```
+
+**Success (200) – Company user:**
+```json
+{
+  "data": {
+    "id": 2,
+    "role": "company",
+    "email": "hr@acme.com",
+    "first_name": "Jane",
+    "middle_name": null,
+    "last_name": "Doe",
+    "phone": null,
+    "created_at": "2025-03-09T12:00:00+00:00",
+    "updated_at": "2025-03-09T12:00:00+00:00",
+    "company_user": { "company_id": 1, "job_title": "HR Manager" },
+    "company": { "id": 1, "name": "Acme Corp" }
+  }
+}
+```
+
 **Error (404):** `{ "message": "User not found." }` (e.g. id is not a student/company user).
 
 ---
