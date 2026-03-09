@@ -16,14 +16,25 @@ class StageCoordinatorUserController extends Controller
 {
     /**
      * List users that coordinators can manage (students and company users).
+     * Use role=student for students only, role=company for company users only.
      */
     public function index(Request $request): JsonResponse
     {
         $query = User::query()
+            ->with(['companyUser.company', 'studentProfile'])
             ->whereIn('role', [UserRole::Student, UserRole::Company]);
 
-        if ($request->has('role') && in_array($request->role, [UserRole::Student->value, UserRole::Company->value], true)) {
+        if ($request->filled('role') && in_array($request->role, [UserRole::Student->value, UserRole::Company->value], true)) {
             $query->where('role', $request->role);
+        }
+
+        if ($request->filled('search')) {
+            $term = '%' . $request->input('search') . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('first_name', 'like', $term)
+                    ->orWhere('last_name', 'like', $term)
+                    ->orWhere('email', 'like', $term);
+            });
         }
 
         $users = $query->orderBy('created_at', 'desc')->paginate(

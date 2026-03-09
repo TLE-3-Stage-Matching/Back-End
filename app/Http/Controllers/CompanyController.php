@@ -7,12 +7,32 @@ use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Company::query()->latest();
+
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+        if ($request->filled('industry_tag_id')) {
+            $query->where('industry_tag_id', $request->input('industry_tag_id'));
+        }
+        if ($request->has('is_active')) {
+            $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
+        }
+
+        $companies = $query->paginate($request->integer('per_page', 15));
+
         return response()->json([
-            'data' => Company::query()->latest()->get(),
+            'data' => $companies->items(),
+            'meta' => [
+                'current_page' => $companies->currentPage(),
+                'last_page' => $companies->lastPage(),
+                'per_page' => $companies->perPage(),
+                'total' => $companies->total(),
+            ],
             'links' => [
-                'self' => url('/api/v1/companies'),
+                'self' => url('/api/v1/coordinator/companies'),
             ],
         ]);
     }

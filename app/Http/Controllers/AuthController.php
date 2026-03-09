@@ -27,7 +27,12 @@ class AuthController extends Controller
 
     public function me()
     {
-        return response()->json(['data' => auth('api')->user()]);
+        $user = auth('api')->user();
+        if ($user && $user->companyUser) {
+            $user->load(['companyUser.company']);
+        }
+
+        return response()->json(['data' => $user]);
     }
 
     public function logout()
