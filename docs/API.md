@@ -4,6 +4,8 @@
 **Content type:** `application/json`  
 **Auth:** JWT Bearer token for protected routes.
 
+For conventions on updating this doc and adding new API functionality, see [CONVENTIONS.md](CONVENTIONS.md).
+
 [↑ Back to index](#index)
 
 ---
