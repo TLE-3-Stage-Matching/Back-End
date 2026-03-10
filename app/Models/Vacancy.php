@@ -18,11 +18,13 @@ class Vacancy extends Model
         'offer_text',
         'expectations_text',
         'status',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'is_active' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

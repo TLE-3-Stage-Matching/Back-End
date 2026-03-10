@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Public listing of vacancies. Returns only vacancies from active (coordinator-approved) companies.
+ * Public listing of vacancies. Returns only active vacancies from active (coordinator-approved) companies.
  * Use this for student/public frontends that display vacancies.
  */
 class VacancyController extends Controller
@@ -16,6 +16,7 @@ class VacancyController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Vacancy::query()
+            ->where('is_active', true)
             ->whereHas('company', fn ($q) => $q->active());
 
         $perPage = $request->integer('per_page', 15);
