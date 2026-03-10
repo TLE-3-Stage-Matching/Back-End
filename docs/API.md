@@ -218,9 +218,11 @@ Returns a JWT for all subsequent protected requests.
 ```json
 {
   "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "token_type": "Bearer"
+  "token_type": "Bearer",
+  "data": { "id": 1, "role": "coordinator", "email": "...", "first_name": "...", ... }
 }
 ```
+`data` is the authenticated user (same shape as `GET /auth/me`). Company users include `company_user` and `company`; students include `student_profile`.
 
 </details>
 

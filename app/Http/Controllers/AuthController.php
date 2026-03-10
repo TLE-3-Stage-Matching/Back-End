@@ -19,9 +19,18 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
+        $user = auth('api')->user();
+        if ($user->companyUser) {
+            $user->load(['companyUser.company']);
+        }
+        if ($user->studentProfile) {
+            $user->load(['studentProfile']);
+        }
+
         return response()->json([
             'token' => $token,
             'token_type' => 'Bearer',
+            'data' => $user,
         ]);
     }
 
