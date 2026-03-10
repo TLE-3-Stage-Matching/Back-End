@@ -4,7 +4,7 @@
 **Content type:** `application/json`  
 **Auth:** JWT Bearer token for protected routes.
 
-For conventions on updating this doc and adding new API functionality, see [CONVENTIONS.md](CONVENTIONS.md).
+For conventions on updating this doc and adding new API functionality, see [CONVENTIONS.md](CONVENTIONS.md) (For Backend only).
 
 [↑ Back to index](#index)
 
@@ -35,33 +35,34 @@ For conventions on updating this doc and adding new API functionality, see [CONV
   - [4. Current user (me)](#4-current-user-me)
   - [5. Logout](#5-logout)
   - [6. Refresh token](#6-refresh-token)
-- **Company users**
+  - [7. Using JWT from front-ends (SPA / mobile)](#7-using-jwt-from-front-ends-spa--mobile)
+- [Company users](#company-users)
   - [Company-only endpoints](#company-only-endpoints)
-  - [My company](#my-company) — [Get](#get-my-company) · [Update](#update-my-company)
-  - [My profile](#my-profile) — [Get](#get-my-profile) · [Update](#update-my-profile)
-  - [Tags](#tags) — [List tags](#list-tags)
-  - [Vacancies (company)](#vacancies-company) — [List](#list-company-vacancies) · [Create](#create-vacancy) · [Get](#get-vacancy) · [Update](#update-vacancy) · [Delete](#delete-vacancy)
-- **Students**
+  - [My company](#my-company)
+  - [My profile](#my-profile)
+  - [Tags](#tags)
+  - [Vacancies (company)](#vacancies-company)
+- [Students](#students)
   - [Student-only endpoints](#student-only-endpoints)
-  - [Student profile](#student-profile) — [Get](#get-student-profile) · [Update](#update-student-profile)
-  - [Student preferences](#student-preferences) — [Get](#get-student-preferences) · [Update](#update-student-preferences)
-  - [Student experiences](#student-experiences) — [List](#list-student-experiences) · [Create](#create-student-experience) · [Update](#update-student-experience) · [Delete](#delete-student-experience)
-  - [Student languages](#student-languages) — [List](#list-student-languages) · [Sync](#sync-student-languages)
-  - [Student tags](#student-tags) — [List](#list-student-tags) · [Sync](#sync-student-tags)
-- **Coordinators**
+  - [Student profile](#student-profile)
+  - [Student preferences](#student-preferences)
+  - [Student experiences](#student-experiences)
+  - [Student languages](#student-languages)
+  - [Student tags](#student-tags)
+- [Coordinators](#coordinators)
   - [Coordinator-only endpoints](#coordinator-only-endpoints)
-  - [Companies (coordinator)](#companies-coordinator) — [List](#list-companies) · [Create](#create-company) · [Get](#get-company) · [Update](#update-company) · [Delete](#delete-company)
-  - [Users (coordinator)](#users-coordinator) — [List](#list-users) · [Create](#create-user-student-or-company) · [Get](#get-user) · [Update](#update-user) · [Delete](#delete-user)
-  - [Vacancies (coordinator)](#vacancies-coordinator) — [List](#list-vacancies-coordinator)
+  - [Companies (coordinator)](#companies-coordinator)
+  - [Users (coordinator)](#users-coordinator)
+  - [Vacancies (coordinator)](#vacancies-coordinator)
 - [Public data (no auth)](#public-data-no-auth)
   - [List active companies](#list-active-companies)
   - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
-- **Reference**
+- [Reference](#reference)
   - [Recommended flow for coordinators](#recommended-flow-for-coordinators)
   - [Testing with Postman](#testing-with-postman)
   - [HTTP status codes](#http-status-codes)
 
-[↑ Back to index](#index)
+[↑ Back to top](#api-documentation-v1--front-end-reference)
 
 ---
 
@@ -265,6 +266,167 @@ Authorization: Bearer <token>
 | **Auth** | Bearer token required |
 
 **Success (200):** Same shape as login: `{ "token": "...", "token_type": "Bearer" }`
+
+[↑ Back to index](#index)
+
+---
+
+### 7. Using JWT from front-ends (SPA / mobile)
+
+This section explains **how to implement authentication in a front-end** (React, Vue, Angular, mobile, etc.), **how to send the Bearer token**, how **refresh** works, and how to **prevent deep-linking into protected pages**.
+
+#### 7.1 Basic login flow
+
+1. **Show a login form** that posts to `POST /api/v1/auth/login` with `email` and `password`.
+2. On **success**, the API returns:
+   ```json
+   {
+     "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+     "token_type": "Bearer"
+   }
+   ```
+3. **Store the token** somewhere accessible to your HTTP client:
+   - For SPAs, a common (simple) option is `localStorage` (e.g. `localStorage.setItem('token', token)`).
+   - For higher security you can keep it **in memory only** (Redux/Pinia/Zustand/etc.) and re-login on full refresh. This avoids XSS-based token theft but requires a new login when the user reloads the page.
+4. After login, **navigate to your app’s protected area** (e.g. `/dashboard`) and start using the token on all protected calls.
+
+#### 7.2 Sending the Bearer token
+
+For every protected API request, include the token as a **Bearer** token in the `Authorization` header:
+
+```http
+Authorization: Bearer <token>
+```
+
+**Example with `fetch` (vanilla JS):**
+
+```js
+const token = localStorage.getItem('token');
+
+const res = await fetch('/api/v1/company', {
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  },
+});
+```
+
+#### 7.3 How refresh works
+
+- JWTs are **time-limited**. When a token expires, protected endpoints will start returning **401 Unauthorized**.
+- To keep the user logged in without showing the login screen again, you can call `POST /api/v1/auth/refresh` with the **current (still-present) token** in the `Authorization` header.
+- The response has the same shape as login:
+  ```json
+  {
+    "token": "new-token-here",
+    "token_type": "Bearer"
+  }
+  ```
+- After a successful refresh:
+  - **Replace** the old token in your storage (localStorage / memory) with the new value.
+  - All subsequent requests should use the new token.
+
+**Typical pattern in front-ends:**
+
+1. Use a central HTTP client (e.g. a small wrapper around `fetch`).
+2. On **401 responses**, try to:
+   - Call `/auth/refresh` once.
+   - If refresh succeeds, update the stored token, retry the original request, and continue.
+   - If refresh fails (401 again), **log the user out** on the client (clear token + redirect to login).
+
+**Example with a small `fetch` wrapper (simplified pseudo-code):**
+
+```js
+async function apiRequest(path, options = {}) {
+  const token = localStorage.getItem('token');
+
+  const res = await fetch(`/api/v1${path}`, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  // If token expired, try refresh once
+  if (res.status === 401 && token) {
+    const refreshRes = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!refreshRes.ok) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      throw new Error('Session expired');
+    }
+
+    const refreshData = await refreshRes.json();
+    const newToken = refreshData.token;
+    localStorage.setItem('token', newToken);
+
+    // Retry original request with new token
+    const retryRes = await fetch(`/api/v1${path}`, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${newToken}`,
+      },
+    });
+
+    return retryRes;
+  }
+
+  return res;
+}
+```
+
+#### 7.4 Preventing deep-linking into protected routes
+
+“Deep-linking” here means typing a protected URL directly into the browser (e.g. `/app/company`) or refreshing on it while **not authenticated**. To prevent this, your front-end should:
+
+1. **Track auth state** (e.g. `isAuthenticated`, plus the current token).
+2. **Protect routes** with guards that:
+   - Check if there is a token.
+   - Optionally call `/auth/me` once on app startup to validate the token and load the user.
+   - Redirect to `/login` when there is no valid token.
+
+**Example (React Router-like pseudo-code):**
+
+```jsx
+function PrivateRoute({ children }) {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    // Not logged in → send to login
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+// Usage:
+// <Route path="/app/company" element={<PrivateRoute><CompanyPage /></PrivateRoute>} />
+```
+
+On **initial app load**, a common pattern is:
+
+1. Read the token from storage.
+2. If present, call `/auth/me` (with `Authorization: Bearer <token>`) to:
+   - Confirm it is still valid.
+   - Get the current user (role, company, student profile, etc.).
+3. If `/auth/me` fails with 401, clear the token and send the user to `/login`.
+
+This ensures that:
+
+- Direct links to protected pages **only work** when there is a valid token.
+- When the token is missing or invalid, users are **always redirected to the login page**, even if they try to deep-link or refresh on a protected route.
+
+[↑ Back to index](#index)
+
+---
 
 [↑ Back to index](#index)
 

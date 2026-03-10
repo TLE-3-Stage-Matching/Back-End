@@ -106,8 +106,65 @@
     <script>
         (function () {
             var md = @json($apiDocMarkdown);
-            marked.setOptions({ gfm: true, breaks: true });
-            document.getElementById('api-docs').innerHTML = marked.parse(md);
+
+            marked.setOptions({
+                gfm: true,
+                breaks: true,
+                headerIds: false, // we will assign our own IDs
+                mangle: false
+            });
+
+            var container = document.getElementById('api-docs');
+            container.innerHTML = marked.parse(md);
+
+            // Simple slug function to mirror our markdown anchors
+            function slugify(text) {
+                return text
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[\s\_]+/g, '-')      // spaces/underscores -> dashes
+                    .replace(/[^\w\-]+/g, '')      // remove non-word chars (keep dashes)
+                    .replace(/\-+/g, '-');         // collapse multiple dashes
+            }
+
+            // Assign IDs to all headings if missing
+            var headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            headings.forEach(function (h) {
+                if (!h.id) {
+                    h.id = slugify(h.textContent || '');
+                }
+            });
+
+            // Ensure there is a generic "top" anchor
+            if (!document.getElementById('top')) {
+                var topAnchor = document.createElement('div');
+                topAnchor.id = 'top';
+                document.body.insertBefore(topAnchor, document.body.firstChild);
+            }
+
+            // Handle in-page anchor clicks manually for smooth scrolling
+            container.addEventListener('click', function (e) {
+                var target = e.target;
+                if (target.tagName === 'A') {
+                    var href = target.getAttribute('href') || '';
+                    if (href.charAt(0) === '#') {
+                        e.preventDefault();
+                        var id = href.slice(1);
+                        if (!id || id === 'top') {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            return;
+                        }
+                        var el = document.getElementById(id);
+                        if (!el) {
+                            // Try slugified version as a fallback
+                            el = document.getElementById(slugify(id));
+                        }
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }
+                }
+            });
         })();
     </script>
 </body>
