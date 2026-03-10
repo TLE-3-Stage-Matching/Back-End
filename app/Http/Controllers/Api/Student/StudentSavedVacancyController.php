@@ -59,20 +59,19 @@ class StudentSavedVacancyController extends Controller
     {
         $user = auth('api')->user();
 
-        $saved = StudentSavedVacancy::query()
+        $updated = StudentSavedVacancy::query()
             ->where('student_user_id', $user->id)
             ->where('vacancy_id', $vacancyId)
             ->whereNull('removed_at')
-            ->first();
+            ->update([
+                'removed_at' => now(),
+            ]);
 
-        if (!$saved) {
+        if ($updated === 0) {
             return response()->json([
                 'message' => 'Saved vacancy not found.',
             ], 404);
         }
-
-        $saved->removed_at = now();
-        $saved->save();
 
         return response()->json([
             'message' => 'Saved vacancy removed successfully.',
