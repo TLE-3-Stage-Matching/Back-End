@@ -1167,14 +1167,15 @@ Replaces all languages for the student. Send the complete list of languages.
 | **Path** | `/student/tags` |
 | **Auth** | Bearer token + student role |
 
-Replaces all tags/skills for the student. Send the complete list of tags.
+Replaces all tags/skills for the student. Send the complete list of tags. This is a **sync** operation—existing tags are removed and replaced with the new list provided.
 
 **Request body:**
 ```json
 {
   "tags": [
-    { "tag_id": 1, "is_active": true, "weight": 5 },
-    { "tag_id": 2, "weight": 3 }
+    { "tag_id": 1, "is_active": true, "weight": 95 },
+    { "tag_id": 2, "is_active": true, "weight": 85 },
+    { "tag_id": 13, "is_active": true, "weight": 70 }
   ]
 }
 ```
@@ -1186,7 +1187,98 @@ Replaces all tags/skills for the student. Send the complete list of tags.
 | tags.*.is_active | boolean | No | Defaults to true |
 | tags.*.weight | number | No | 0–100, represents proficiency/priority |
 
-**Success (200):** `{ "message": "Tags updated successfully.", "data": [...], "links": {...} }`
+#### Understanding the `weight` field
+
+The `weight` field (0–100) represents the student's **proficiency level** for that skill/tag:
+
+| Weight Range | Proficiency Level |
+|--------------|-------------------|
+| 90–100 | Expert |
+| 70–89 | Advanced |
+| 50–69 | Intermediate |
+| 30–49 | Beginner |
+| 0–29 | Learning |
+
+This weight is used by the matching algorithm to better match students with vacancies. A higher weight indicates stronger proficiency.
+
+**Example – Adding skills with proficiency levels:**
+```json
+{
+  "tags": [
+    { "tag_id": 19, "is_active": true, "weight": 95 },
+    { "tag_id": 1, "is_active": true, "weight": 90 },
+    { "tag_id": 13, "is_active": true, "weight": 60 },
+    { "tag_id": 4, "is_active": true, "weight": 40 }
+  ]
+}
+```
+In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in tag 1 (e.g., PHP), intermediate in tag 13 (e.g., React), and a beginner in tag 4 (e.g., Python).
+
+**Success (200):**
+```json
+{
+  "message": "Tags updated successfully.",
+  "data": [
+    {
+      "tag_id": 19,
+      "is_active": true,
+      "weight": 95,
+      "tag": { "id": 19, "name": "Laravel", "tag_type": "skill" }
+    },
+    {
+      "tag_id": 1,
+      "is_active": true,
+      "weight": 90,
+      "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+    }
+  ],
+  "links": { "self": "https://<your-api-host>/api/v1/student/tags" }
+}
+```
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| 401 | Not authenticated (missing or invalid JWT) |
+| 403 | User is not a student |
+| 422 | Validation error (invalid tag_id, weight out of range, etc.) |
+
+<details>
+<summary><strong>Postman example</strong></summary>
+
+1. **Login as a student** to get a JWT token:
+   ```
+   POST /api/v1/auth/login
+   Content-Type: application/json
+   
+   { "email": "student@example.com", "password": "password123" }
+   ```
+
+2. **Sync tags** with the token:
+   ```
+   PUT /api/v1/student/tags
+   Authorization: Bearer <your-jwt-token>
+   Content-Type: application/json
+   Accept: application/json
+   
+   {
+     "tags": [
+       { "tag_id": 1, "is_active": true, "weight": 90 },
+       { "tag_id": 2, "is_active": true, "weight": 85 },
+       { "tag_id": 19, "is_active": true, "weight": 95 }
+     ]
+   }
+   ```
+
+3. **Verify** by listing tags:
+   ```
+   GET /api/v1/student/tags
+   Authorization: Bearer <your-jwt-token>
+   Accept: application/json
+   ```
+
+</details>
 
 [↑ Back to index](#index)
 
