@@ -57,6 +57,7 @@ class VacancyController extends Controller
                 'offer_text' => $request->input('offer_text'),
                 'expectations_text' => $request->input('expectations_text'),
                 'status' => $request->input('status'),
+                'is_active' => false,
             ]);
 
             $tags = $request->input('tags', []);
