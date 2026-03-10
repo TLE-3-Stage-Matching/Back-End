@@ -4,11 +4,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Api\Company\CompanyAccountController as CompanyAccountController;
 use App\Http\Controllers\Api\Company\VacancyController as CompanyVacancyController;
+use App\Http\Controllers\Api\Coordinator\CoordinatorMatchController;
 use App\Http\Controllers\Api\Coordinator\CoordinatorVacancyController;
 use App\Http\Controllers\CompanyRegistrationController;
 use App\Http\Controllers\Api\CoordinatorRegisterController;
 use App\Http\Controllers\Api\PublicCompanyController;
 use App\Http\Controllers\Api\StageCoordinatorUserController;
+use App\Http\Controllers\Api\Student\StudentMatchScoreController;
 use App\Http\Controllers\Api\Student\StudentProfileController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\VacancyController;
@@ -75,11 +77,15 @@ Route::prefix('v1')->group(function () {
             // Tags/Skills (sync)
             Route::get('student/tags', [StudentProfileController::class, 'listTags']);
             Route::put('student/tags', [StudentProfileController::class, 'syncTags']);
+
+            // Match scores: list vacancies with scores (sorted by score), subscores + explanations
+            Route::get('student/vacancies-with-scores', [StudentMatchScoreController::class, 'vacanciesWithScores']);
         });
 
-        // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users)
+        // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users), match scores for student
         Route::middleware('coordinator')->group(function () {
             Route::get('coordinator/vacancies', [CoordinatorVacancyController::class, 'index']);
+            Route::get('coordinator/students/{user}/vacancies-with-scores', [CoordinatorMatchController::class, 'studentVacanciesWithScores']);
             Route::apiResource('coordinator/companies', CompanyController::class);
             Route::apiResource('coordinator/users', StageCoordinatorUserController::class);
         });

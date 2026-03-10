@@ -14,9 +14,9 @@ For conventions on updating this doc and adding new API functionality, see [CONV
 
 | Role | Capabilities |
 |------|--------------|
-| **Coordinator** | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list companies/users with filters. |
+| **Coordinator** | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list **vacancies with match scores** for a given student; list companies/users with filters. |
 | **Company user** | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB). |
-| **Student** | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**. |
+| **Student** | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**; list **vacancies with match scores** (tag-based similarity, sorted by score, with subscores and explanations). |
 | **Any authenticated** | List **tags** (for vacancy forms); `GET /auth/me` (company users get `company_user` and `company` loaded). |
 
 **Tags:** There is no standalone “create tag” endpoint. Tags are created **inline** when a company user creates or updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy’s `tags` array; the backend uses `firstOrCreate` and persists new tags to the database.
@@ -49,11 +49,13 @@ For conventions on updating this doc and adding new API functionality, see [CONV
   - [Student experiences](#student-experiences)
   - [Student languages](#student-languages)
   - [Student tags](#student-tags)
+  - [Vacancies with match scores (student)](#vacancies-with-match-scores-student)
 - [Coordinators](#coordinators)
   - [Coordinator-only endpoints](#coordinator-only-endpoints)
   - [Companies (coordinator)](#companies-coordinator)
   - [Users (coordinator)](#users-coordinator)
   - [Vacancies (coordinator)](#vacancies-coordinator)
+  - [Student vacancies with match scores (coordinator)](#student-vacancies-with-match-scores-coordinator)
 - [Public data (no auth)](#public-data-no-auth)
   - [List active companies](#list-active-companies)
   - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
@@ -714,6 +716,8 @@ Returns all vacancies for the authenticated user’s company.
 - **New tag:** `{ "name": "<name>", "tag_type": "<tag_type>" }`. The tag is created if it doesn’t exist (matched by name + tag_type). Optional: `requirement_type`, `importance`.
 
 **Success (201):** `{ "data": <vacancy with location and vacancy_requirements loaded>, "links": { "self": "..." } }`  
+**Major tags:** A vacancy may have at most 5 tags with tag_type "major". If exceeded, the API returns 422 with message: "A vacancy may have at most 5 major tags."
+
 **Error (422):** Validation errors, or `"Location does not belong to your company."` if `location_id` is not one of your company’s locations.
 
 ---
@@ -771,9 +775,11 @@ Update vacancy fields and/or replace its tags. Only include fields you want to c
 | status | string | Max 32 |
 | tags | array | Same format as create; replaces all existing tags on the vacancy |
 
+**Major tags:** Same as create: at most **5** tags with `tag_type` "major" in the replacement `tags` array. **422** with `"A vacancy may have at most 5 major tags."` if exceeded.
+
 **Success (200):** `{ "data": <updated vacancy>, "links": { "self": "...", "collection": "..." } }`  
-**Error (404):** Vacancy not found or not owned by your company.  
-**Error (422):** Validation errors, or `"Location does not belong to your company."`
+**Error (404):** Vacancy not found or not owned by your company.
+**Error (422):** Validation errors, or `"Location does not belong to your company."`, or `"A vacancy may have at most 5 major tags."`
 
 ---
 
@@ -1238,13 +1244,15 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
 }
 ```
 
+**Major:** A student may have **at most one** tag whose `tag_type` is "major". If the sync payload includes more than one major (by `tag_id`), the API returns **422** with message: `"You may select at most one major."`
+
 **Error responses:**
 
 | Status | Reason |
 |--------|--------|
 | 401 | Not authenticated (missing or invalid JWT) |
 | 403 | User is not a student |
-| 422 | Validation error (invalid tag_id, weight out of range, etc.) |
+| 422 | Validation error (invalid tag_id, weight out of range, more than one major, etc.) |
 
 <details>
 <summary><strong>Postman example</strong></summary>
@@ -1281,6 +1289,72 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
    ```
 
 </details>
+
+[↑ Back to index](#index)
+
+---
+
+## Vacancies with match scores (student)
+
+Students can list vacancies (from active companies only) with a **match score** (0–100%) and **subscores by category** (skill, industry, major, trait), each with a short explanation. The list is **sorted by overall match score descending** (best matches first). The score is computed using **cosine similarity** over the student’s tags and the vacancy’s requirement tags. When computing the score and subscores, the algorithm uses at most **6 skills** and **4 traits** per student and per vacancy (other tag types have their own limits; see config). Each subscore is the same metric over one tag type, with an explanation describing why the user got that score.
+
+### List vacancies with match scores (student)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/vacancies-with-scores` |
+| **Auth** | Bearer token + student role |
+
+**Query parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| per_page | number | 15 | Pagination size |
+| page | number | 1 | Page number |
+| industry_tag_id | number | — | Optional. Restrict to vacancies from companies with this `industry_tag_id`. Use **GET /tags?tag_type=industry** for the list of industries. |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "vacancy": {
+        "id": 1,
+        "company_id": 1,
+        "location_id": null,
+        "title": "Backend developer",
+        "hours_per_week": 40,
+        "description": "...",
+        "status": "open",
+        "created_at": "2025-03-10T12:00:00+00:00",
+        "updated_at": "2025-03-10T12:00:00+00:00",
+        "company": { "id": 1, "name": "Acme Corp" }
+      },
+      "match_score": 72.5,
+      "subscores": {
+        "skill": { "score": 75, "explanation": "Skill match: 75% — 3 of 4 required skills match your profile (PHP, Laravel, React)." },
+        "trait": { "score": 50, "explanation": "Trait match: 50% — 1 of 2 required traits match your profile (Team Player)." }
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 15,
+    "total": 1
+  },
+  "links": { "self": "..." }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| vacancy | Vacancy summary (id, title, company, etc.) |
+| match_score | Overall tag-based match 0–100% (cosine similarity) |
+| subscores | Per-category scores: **skill** and **trait** only. Each has `score` (0–100) and `explanation` (short text). The percentage is **weighted** by how well your tag strengths align with the vacancy’s requirements (cosine similarity), so e.g. 2 of 6 required tags matching can yield more than 33% when those matches have high weight/importance. |
+
+**Error (401/403):** Not authenticated or not a student.
 
 [↑ Back to index](#index)
 
@@ -1836,6 +1910,30 @@ Coordinators can list all vacancies across companies with optional filtering.
   "links": { "self": "..." }
 }
 ```
+
+[↑ Back to index](#index)
+
+---
+
+## Student vacancies with match scores (coordinator)
+
+Coordinators can view the same **vacancies with match scores** list for a given student (as if the student had called the student endpoint). Response shape is identical: vacancies from active companies, sorted by match score descending, with overall score and subscores (**skill** and **trait** only) each with score and explanation. The same **major** and **industry_tag_id** filtering applies (see [Vacancies with match scores (student)](#vacancies-with-match-scores-student)).
+
+### List vacancies with match scores for a student (coordinator)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/coordinator/students/{user}/vacancies-with-scores` |
+| **Auth** | Bearer token + coordinator role |
+
+**Path parameters:** `user` — user ID of the student.
+
+**Query parameters:** `per_page` (number, default 15), `page` (number, default 1), `industry_tag_id` (number, optional — restrict to companies with this industry tag).
+
+**Success (200):** Same shape as [List vacancies with match scores (student)](#list-vacancies-with-match-scores-student): `data` (array of vacancy + match_score + subscores with **skill** and **trait** only), `meta` (pagination), `links`.
+
+**Error (404):** `{ "message": "User is not a student." }` when the given user is not a student.
 
 [↑ Back to index](#index)
 
