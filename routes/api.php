@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\Api\Student\StudentSavedVacancyController;
 use App\Http\Controllers\Api\Company\CompanyAccountController as CompanyAccountController;
 use App\Http\Controllers\Api\Company\VacancyController as CompanyVacancyController;
 use App\Http\Controllers\Api\Coordinator\CoordinatorVacancyController;
@@ -75,6 +76,10 @@ Route::prefix('v1')->group(function () {
             // Tags/Skills (sync)
             Route::get('student/tags', [StudentProfileController::class, 'listTags']);
             Route::put('student/tags', [StudentProfileController::class, 'syncTags']);
+
+            Route::get('student/saved-vacancies', [StudentSavedVacancyController::class, 'index']);
+            Route::post('student/saved-vacancies', [StudentSavedVacancyController::class, 'store']);
+            Route::delete('student/saved-vacancies/{vacancyId}', [StudentSavedVacancyController::class, 'destroy']);
         });
 
         // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users)
