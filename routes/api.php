@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\StageCoordinatorUserController;
 use App\Http\Controllers\Api\Student\StudentProfileController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\VacancyController;
+use App\Http\Controllers\Api\Student\StudentFavoriteCompanyController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -71,6 +72,11 @@ Route::prefix('v1')->group(function () {
             // Languages (sync)
             Route::get('student/languages', [StudentProfileController::class, 'listLanguages']);
             Route::put('student/languages', [StudentProfileController::class, 'syncLanguages']);
+
+            // Favorite companies (add/remove)
+            Route::get('student/favorite-companies', [StudentFavoriteCompanyController::class, 'index']);
+            Route::post('student/favorite-companies', [StudentFavoriteCompanyController::class, 'store']);
+            Route::delete('student/favorite-companies/{companyId}', [StudentFavoriteCompanyController::class, 'destroy']);
 
             // Tags/Skills (sync)
             Route::get('student/tags', [StudentProfileController::class, 'listTags']);
