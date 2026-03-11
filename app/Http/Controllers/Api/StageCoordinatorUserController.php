@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Coordinator\StoreUserRequest;
 use App\Http\Requests\Coordinator\UpdateUserRequest;
 use App\Models\CompanyUser;
+use App\Models\StudentCoordinatorAssignment;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,12 @@ class StageCoordinatorUserController extends Controller
 
         if ($request->filled('role') && in_array($request->role, [UserRole::Student->value, UserRole::Company->value], true)) {
             $query->where('role', $request->role);
+        }
+        if ($request->boolean('assigned_to_me') && $request->input('role') === UserRole::Student->value) {
+            $query->whereHas('coordinatorAssignments', function ($q) {
+                $q->where('coordinator_user_id', auth('api')->id())
+                    ->whereNull('unassigned_at');
+            });
         }
 
         if ($request->filled('search')) {
@@ -92,7 +99,17 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($role === UserRole::Student) {
-            StudentProfile::create(['user_id' => $user->id]);
+            StudentProfile::create([
+                'user_id' => $user->id,
+            ]);
+
+            StudentCoordinatorAssignment::create([
+                'student_user_id' => $user->id,
+                'coordinator_user_id' => auth('api')->id(),
+                'assigned_by_user_id' => auth('api')->id(),
+                'assigned_at' => now(),
+                'unassigned_at' => null,
+            ]);
         }
 
         $user->load(['companyUser.company', 'studentProfile']);
