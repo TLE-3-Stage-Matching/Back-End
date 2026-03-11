@@ -185,14 +185,14 @@ class StageCoordinatorUserController extends Controller
     public function destroy(User $user): JsonResponse
     {
         if (!in_array($user->role, [UserRole::Student, UserRole::Company, UserRole::Coordinator], true)) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['message' => 'student niet gevonden niet gevonden.'], 404);
         }
         if ($user->role !== UserRole::Student) {
             return response()->json([
-                'message' => 'Only students can be deleted'
+                'message' => 'Alleen studenten kunnen verwijderd worden'
             ], 403);
         }
-        Log::debug('User deleted by coordinator', [
+        Log::debug('Student is deleted door coordinator', [
             'deleted_user_id' => $user->id,
             'role' => $user->role
         ]);
