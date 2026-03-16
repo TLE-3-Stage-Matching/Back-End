@@ -53,6 +53,9 @@ Route::prefix('v1')->group(function () {
             Route::get('company/vacancies/{vacancy}', [CompanyVacancyController::class, 'show']);
             Route::match(['put', 'patch'], 'company/vacancies/{vacancy}', [CompanyVacancyController::class, 'update']);
             Route::delete('company/vacancies/{vacancy}', [CompanyVacancyController::class, 'destroy']);
+            Route::get('company/vacancies/{vacancy}/comments', [CompanyVacancyController::class, 'listComments']);
+            Route::patch('company/vacancies/comments/{comment}', [CompanyVacancyController::class, 'updateComment']);
+            Route::delete('company/vacancies/comments/{comment}', [CompanyVacancyController::class, 'destroyComment']);
         });
 
         // Student-only: own profile, experiences, preferences, languages, tags
@@ -105,6 +108,8 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('coordinator/users', StageCoordinatorUserController::class);
             Route::post('coordinator/users/{student}/assignments', [StageCoordinatorUserController::class, 'assignCoordinator']);
             Route::post('coordinator/users/{student}/unassignments', [StageCoordinatorUserController::class, 'unassignCoordinator']);
+            Route::post('coordinator/vacancies/{vacancy}/comments', [CoordinatorVacancyController::class, 'storeComment']);
+            
         });
     });
 });
