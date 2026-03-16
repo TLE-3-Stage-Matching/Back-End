@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreVacancyRequest;
 use App\Http\Requests\Api\UpdateVacancyRequest;
 use App\Models\Tag;
 use App\Models\Vacancy;
+use App\Models\VacancyComment;
 use App\Models\VacancyRequirement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class VacancyController extends Controller
 
         if ($request->filled('location_id')) {
             $locationExists = $company->locations()->where('id', $request->input('location_id'))->exists();
-            if (! $locationExists) {
+            if (!$locationExists) {
                 return response()->json(['message' => 'Location does not belong to your company.'], 422);
             }
         }
@@ -57,11 +58,12 @@ class VacancyController extends Controller
                 'offer_text' => $request->input('offer_text'),
                 'expectations_text' => $request->input('expectations_text'),
                 'status' => $request->input('status'),
+                'is_active' => false,
             ]);
 
             $tags = $request->input('tags', []);
             foreach ($tags as $tagInput) {
-                if (! empty($tagInput['id'])) {
+                if (!empty($tagInput['id'])) {
                     $tag = Tag::find($tagInput['id']);
                 } else {
                     $tag = Tag::firstOrCreate(
@@ -120,7 +122,7 @@ class VacancyController extends Controller
 
         if ($request->filled('location_id')) {
             $locationExists = $company->locations()->where('id', $request->input('location_id'))->exists();
-            if (! $locationExists) {
+            if (!$locationExists) {
                 return response()->json(['message' => 'Location does not belong to your company.'], 422);
             }
         }
@@ -142,7 +144,7 @@ class VacancyController extends Controller
                 $vacancy->vacancyRequirements()->delete();
                 $tags = $request->input('tags', []);
                 foreach ($tags as $tagInput) {
-                    if (! empty($tagInput['id'])) {
+                    if (!empty($tagInput['id'])) {
                         $tag = Tag::find($tagInput['id']);
                     } else {
                         $tag = Tag::firstOrCreate(
@@ -193,5 +195,74 @@ class VacancyController extends Controller
         if ($vacancy->company_id !== $company->id) {
             abort(404);
         }
+    }
+
+    public function updateComment(Request $request, VacancyComment $comment): JsonResponse
+    {
+        $companyUser = auth()->user()->companyUser;
+
+        if ($comment->vacancy->company_id !== $companyUser->company_id) {
+            return response()->json([
+                'message' => 'Forbidden'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'comment' => ['required', 'string']
+        ]);
+
+        $comment->update([
+            'comment' => $validated['comment']
+        ]);
+
+        return response()->json([
+            'message' => 'Comment updated successfully.',
+            'data' => $comment,
+            'links' => [
+                'self' => url("/api/v1/company/vacancies/comments/{$comment->id}")
+            ]
+        ]);
+    }
+
+    public function listComments(Vacancy $vacancy): JsonResponse
+    {
+        $companyUser = auth()->user()->companyUser;
+
+        if ($vacancy->company_id !== $companyUser->company_id) {
+            return response()->json([
+                'message' => 'Forbidden'
+            ], 403);
+        }
+
+        $comments = $vacancy->vacancyComments()->with('author')->get();
+
+        return response()->json([
+            'data' => $comments,
+            'links' => [
+                'self' => url("/api/v1/company/vacancies/{$vacancy->id}/comments")
+            ]
+        ]);
+    }
+
+    public function destroyComment(VacancyComment $comment): JsonResponse
+    {
+        $companyUser = auth()->user()->companyUser;
+
+        if ($comment->vacancy->company_id !== $companyUser->company_id) {
+            return response()->json([
+                'message' => 'Forbidden'
+            ], 403);
+        }
+
+        $commentId = $comment->id;
+
+        $comment->delete();
+
+        return response()->json([
+            'message' => 'Comment deleted successfully.',
+            'links' => [
+                'self' => url("/api/v1/company/vacancies/comments/{$commentId}")
+            ]
+        ]);
     }
 }

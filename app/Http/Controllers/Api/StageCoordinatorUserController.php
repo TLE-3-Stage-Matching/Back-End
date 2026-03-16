@@ -7,10 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Coordinator\StoreUserRequest;
 use App\Http\Requests\Coordinator\UpdateUserRequest;
 use App\Models\CompanyUser;
+use App\Models\StudentCoordinatorAssignment;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class StageCoordinatorUserController extends Controller
 {
@@ -27,6 +29,12 @@ class StageCoordinatorUserController extends Controller
         if ($request->filled('role') && in_array($request->role, [UserRole::Student->value, UserRole::Company->value], true)) {
             $query->where('role', $request->role);
         }
+        if ($request->boolean('assigned_to_me') && $request->input('role') === UserRole::Student->value) {
+            $query->whereHas('coordinatorAssignments', function ($q) {
+                $q->where('coordinator_user_id', auth('api')->id())
+                    ->whereNull('unassigned_at');
+            });
+        }
 
         if ($request->filled('search')) {
             $term = '%' . $request->input('search') . '%';
@@ -41,7 +49,7 @@ class StageCoordinatorUserController extends Controller
         if ($request->boolean('active_companies_only')) {
             $query->where(function ($q) {
                 $q->where('role', UserRole::Student)
-                    ->orWhereHas('companyUser.company', fn ($cq) => $cq->where('is_active', true));
+                    ->orWhereHas('companyUser.company', fn($cq) => $cq->where('is_active', true));
             });
         }
 
@@ -92,7 +100,17 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($role === UserRole::Student) {
-            StudentProfile::create(['user_id' => $user->id]);
+            StudentProfile::create([
+                'user_id' => $user->id,
+            ]);
+
+            StudentCoordinatorAssignment::create([
+                'student_user_id' => $user->id,
+                'coordinator_user_id' => auth('api')->id(),
+                'assigned_by_user_id' => auth('api')->id(),
+                'assigned_at' => now(),
+                'unassigned_at' => null,
+            ]);
         }
 
         $user->load(['companyUser.company', 'studentProfile']);
@@ -108,7 +126,7 @@ class StageCoordinatorUserController extends Controller
      */
     public function show(User $user): JsonResponse
     {
-        if (! in_array($user->role, [UserRole::Student, UserRole::Company], true)) {
+        if (!in_array($user->role, [UserRole::Student, UserRole::Company], true)) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
@@ -135,7 +153,7 @@ class StageCoordinatorUserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        if (! in_array($user->role, [UserRole::Student, UserRole::Company], true)) {
+        if (!in_array($user->role, [UserRole::Student, UserRole::Company], true)) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
@@ -183,13 +201,120 @@ class StageCoordinatorUserController extends Controller
      */
     public function destroy(User $user): JsonResponse
     {
-        if (! in_array($user->role, [UserRole::Student, UserRole::Company], true)) {
-            return response()->json(['message' => 'User not found.'], 404);
+        if (!in_array($user->role, [UserRole::Student, UserRole::Company, UserRole::Coordinator], true)) {
+            return response()->json(['message' => 'student niet gevonden niet gevonden.'], 404);
         }
+        if ($user->role !== UserRole::Student) {
+            return response()->json([
+                'message' => 'Alleen studenten kunnen verwijderd worden'
+            ], 403);
+        }
+        Log::debug('Student is deleted door coordinator', [
+            'deleted_user_id' => $user->id,
+            'role' => $user->role
+        ]);
 
         $user->delete();
 
-        return response()->json(['message' => 'User deleted successfully.'], 200);
+        return response()->json([
+            'message' => 'User deleted successfully.',
+            'links' => [
+                'collection' => url('/api/v1/coordinator/users')
+            ]
+        ], 200);
+    }
+
+    /**
+     * Assign a student to a coordinator (can be any coordinator).
+     */
+    public function assignCoordinator(Request $request, User $student): JsonResponse
+    {
+        if ($student->role !== UserRole::Student) {
+            return response()->json(['message' => 'User is not a student.'], 422);
+        }
+
+        $validated = $request->validate([
+            'coordinator_user_id' => ['required', 'integer', 'exists:users,id'],
+            'note' => ['nullable', 'string'],
+        ]);
+
+        $coordinator = User::query()
+            ->whereKey($validated['coordinator_user_id'])
+            ->where('role', UserRole::Coordinator)
+            ->first();
+
+        if (! $coordinator) {
+            return response()->json(['message' => 'Coordinator not found.'], 422);
+        }
+
+        $assignment = StudentCoordinatorAssignment::create([
+            'student_user_id' => $student->id,
+            'coordinator_user_id' => $coordinator->id,
+            'assigned_by_user_id' => auth('api')->id(),
+            'assigned_at' => now(),
+            'unassigned_at' => null,
+            'note' => $validated['note'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Coordinator assigned to student successfully.',
+            'data' => [
+                'id' => $assignment->id,
+                'student_user_id' => $assignment->student_user_id,
+                'coordinator_user_id' => $assignment->coordinator_user_id,
+                'assigned_by_user_id' => $assignment->assigned_by_user_id,
+                'assigned_at' => $assignment->assigned_at?->toIso8601String(),
+                'unassigned_at' => $assignment->unassigned_at?->toIso8601String(),
+                'note' => $assignment->note,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Unassign a student from a coordinator (optionally specifying which coordinator).
+     */
+    public function unassignCoordinator(Request $request, User $student): JsonResponse
+    {
+        if ($student->role !== UserRole::Student) {
+            return response()->json(['message' => 'User is not a student.'], 422);
+        }
+
+        $validated = $request->validate([
+            'coordinator_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'note' => ['nullable', 'string'],
+        ]);
+
+        $coordinatorId = $validated['coordinator_user_id'] ?? auth('api')->id();
+
+        $assignment = StudentCoordinatorAssignment::query()
+            ->where('student_user_id', $student->id)
+            ->where('coordinator_user_id', $coordinatorId)
+            ->whereNull('unassigned_at')
+            ->latest('assigned_at')
+            ->first();
+
+        if (! $assignment) {
+            return response()->json(['message' => 'Active assignment not found.'], 404);
+        }
+
+        $assignment->unassigned_at = now();
+        if (array_key_exists('note', $validated)) {
+            $assignment->note = $validated['note'];
+        }
+        $assignment->save();
+
+        return response()->json([
+            'message' => 'Student unassigned from coordinator successfully.',
+            'data' => [
+                'id' => $assignment->id,
+                'student_user_id' => $assignment->student_user_id,
+                'coordinator_user_id' => $assignment->coordinator_user_id,
+                'assigned_by_user_id' => $assignment->assigned_by_user_id,
+                'assigned_at' => $assignment->assigned_at?->toIso8601String(),
+                'unassigned_at' => $assignment->unassigned_at?->toIso8601String(),
+                'note' => $assignment->note,
+            ],
+        ]);
     }
 
     private function formatUser(User $user): array
@@ -235,7 +360,7 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($user->relationLoaded('studentExperiences')) {
-            $data['student_experiences'] = $user->studentExperiences->map(fn ($exp) => [
+            $data['student_experiences'] = $user->studentExperiences->map(fn($exp) => [
                 'id' => $exp->id,
                 'title' => $exp->title,
                 'company_name' => $exp->company_name,
@@ -246,7 +371,7 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($user->relationLoaded('studentTags')) {
-            $data['student_tags'] = $user->studentTags->map(fn ($st) => [
+            $data['student_tags'] = $user->studentTags->map(fn($st) => [
                 'tag_id' => $st->tag_id,
                 'is_active' => $st->is_active,
                 'weight' => $st->weight,
@@ -259,7 +384,7 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($user->relationLoaded('studentLanguages')) {
-            $data['student_languages'] = $user->studentLanguages->map(fn ($sl) => [
+            $data['student_languages'] = $user->studentLanguages->map(fn($sl) => [
                 'language_id' => $sl->language_id,
                 'language_level_id' => $sl->language_level_id,
                 'is_active' => $sl->is_active,
@@ -291,7 +416,7 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($user->relationLoaded('studentFavoriteCompanies')) {
-            $data['student_favorite_companies'] = $user->studentFavoriteCompanies->map(fn ($fc) => [
+            $data['student_favorite_companies'] = $user->studentFavoriteCompanies->map(fn($fc) => [
                 'company_id' => $fc->company_id,
                 'company' => $fc->relationLoaded('company') && $fc->company ? [
                     'id' => $fc->company->id,
@@ -301,7 +426,7 @@ class StageCoordinatorUserController extends Controller
         }
 
         if ($user->relationLoaded('studentSavedVacancies')) {
-            $data['student_saved_vacancies'] = $user->studentSavedVacancies->map(fn ($sv) => [
+            $data['student_saved_vacancies'] = $user->studentSavedVacancies->map(fn($sv) => [
                 'vacancy_id' => $sv->vacancy_id,
                 'removed_at' => $sv->removed_at?->toIso8601String(),
                 'vacancy' => $sv->relationLoaded('vacancy') && $sv->vacancy ? [

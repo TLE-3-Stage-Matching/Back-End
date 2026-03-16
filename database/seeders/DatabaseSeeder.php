@@ -25,7 +25,12 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             TagSeeder::class,
+<<<<<<< AI-tags-matching-&-overview/user-story-10-&-23
             StudentAndVacancySeeder::class,
+=======
+            LanguageLevelSeeder::class,
+            LanguageSeeder::class,
+>>>>>>> develop
         ]);
     }
 }
