@@ -1767,7 +1767,11 @@ Omit `password` or send `null` to leave it unchanged.
 | **Method** | `DELETE` |
 | **Path** | `/coordinator/users/{id}` |
 
+Only **students** can be deleted. Attempting to delete a coordinator or company user returns **403**.  
+Deleting a student also **cascades** to their related data (profile, experiences, tags, languages, preferences, favorites, saved vacancies, messages, conversations, and other student-specific records), either removing those rows or nulling references where configured.
+
 **Success (200):** `{ "message": "User deleted successfully." }`
+**Error (403):** `{ "message": "Alleen studenten kunnen verwijderd worden" }`
 **Error (404):** `{ "message": "User not found." }`
 
 [↑ Back to index](#index)
