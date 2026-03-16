@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Vacancy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\VacancyComment;
+use Illuminate\Support\Facades\Log;
 
 class CoordinatorVacancyController extends Controller
 {
@@ -47,5 +49,32 @@ class CoordinatorVacancyController extends Controller
                 'self' => url('/api/v1/coordinator/vacancies'),
             ],
         ]);
+    }
+
+    public function storeComment(Request $request, Vacancy $vacancy): JsonResponse
+    {
+        $validated = $request->validate([
+            'comment' => ['required', 'string']
+        ]);
+
+        $comment = VacancyComment::create([
+            'vacancy_id' => $vacancy->id,
+            'author_user_id' => auth()->id(),
+            'comment' => $validated['comment']
+        ]);
+
+        Log::debug('Coordinator added comment to vacancy', [
+            'vacancy_id' => $vacancy->id,
+            'author_user_id' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'message' => 'Comment added successfully.',
+            'data' => $comment,
+            'links' => [
+                'self' => url("/api/v1/coordinator/vacancies/{$vacancy->id}/comments/{$comment->id}"),
+                'collection' => url("/api/v1/coordinator/vacancies/{$vacancy->id}/comments")
+            ]
+        ], 201);
     }
 }
