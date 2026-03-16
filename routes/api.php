@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\VacancyController;
 use App\Http\Controllers\Api\Student\StudentFavoriteCompanyController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\Student\StudentProfileViewController;
 
 Route::prefix('v1')->group(function () {
     // Public: register as stage coordinator
@@ -37,7 +38,7 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::post('auth/refresh', [AuthController::class, 'refresh']);
         Route::get('auth/me', [AuthController::class, 'me']);
-
+        Route::get('student/{student}', [StudentProfileViewController::class, 'show']);
         // Tags: list for selecting when creating vacancies (any authenticated user)
         Route::get('tags', [TagController::class, 'index']);
 
