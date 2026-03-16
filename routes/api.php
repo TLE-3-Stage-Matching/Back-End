@@ -37,7 +37,7 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::post('auth/refresh', [AuthController::class, 'refresh']);
         Route::get('auth/me', [AuthController::class, 'me']);
-        Route::get('students/{student}', [StudentProfileViewController::class, 'show']);
+        Route::get('student/{student}', [StudentProfileViewController::class, 'show']);
         // Tags: list for selecting when creating vacancies (any authenticated user)
         Route::get('tags', [TagController::class, 'index']);
 
