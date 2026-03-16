@@ -4,7 +4,8 @@
 **Content type:** `application/json`  
 **Auth:** JWT Bearer token for protected routes.
 
-For conventions on updating this doc and adding new API functionality, see [CONVENTIONS.md](CONVENTIONS.md) (For Backend only).
+For conventions on updating this doc and adding new API functionality, see [CONVENTIONS.md](CONVENTIONS.md) (For Backend
+only).
 
 [↑ Back to index](#index)
 
@@ -12,14 +13,16 @@ For conventions on updating this doc and adding new API functionality, see [CONV
 
 ## Overview – by role
 
-| Role | Capabilities |
-|------|--------------|
-| **Coordinator** | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list companies/users with filters. |
-| **Company user** | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB). |
-| **Student** | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**. |
-| **Any authenticated** | List **tags** (for vacancy forms); `GET /auth/me` (company users get `company_user` and `company` loaded). |
+| Role                  | Capabilities                                                                                                                                                                                                             |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Coordinator**       | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list companies/users with filters.                                            |
+| **Company user**      | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB). |
+| **Student**           | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**.                                                                           |
+| **Any authenticated** | List **tags** (for vacancy forms); `GET /auth/me` (company users get `company_user` and `company` loaded).                                                                                                               |
 
-**Tags:** There is no standalone “create tag” endpoint. Tags are created **inline** when a company user creates or updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy’s `tags` array; the backend uses `firstOrCreate` and persists new tags to the database.
+**Tags:** There is no standalone “create tag” endpoint. Tags are created **inline** when a company user creates or
+updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy’s `tags` array; the backend uses
+`firstOrCreate` and persists new tags to the database.
 
 [↑ Back to index](#index)
 
@@ -29,39 +32,39 @@ For conventions on updating this doc and adding new API functionality, see [CONV
 
 - [Overview – by role](#overview--by-role)
 - [Authentication](#authentication)
-  - [1. Register as coordinator](#1-register-as-coordinator-stage-coordinator)
-  - [2. Register as company (self-registration)](#2-register-as-company-self-registration)
-  - [3. Login (get JWT)](#3-login-get-jwt)
-  - [4. Current user (me)](#4-current-user-me)
-  - [5. Logout](#5-logout)
-  - [6. Refresh token](#6-refresh-token)
-  - [7. Using JWT from front-ends (SPA / mobile)](#7-using-jwt-from-front-ends-spa--mobile)
+    - [1. Register as coordinator](#1-register-as-coordinator-stage-coordinator)
+    - [2. Register as company (self-registration)](#2-register-as-company-self-registration)
+    - [3. Login (get JWT)](#3-login-get-jwt)
+    - [4. Current user (me)](#4-current-user-me)
+    - [5. Logout](#5-logout)
+    - [6. Refresh token](#6-refresh-token)
+    - [7. Using JWT from front-ends (SPA / mobile)](#7-using-jwt-from-front-ends-spa--mobile)
 - [Company users](#company-users)
-  - [Company-only endpoints](#company-only-endpoints)
-  - [My company](#my-company)
-  - [My profile](#my-profile)
-  - [Tags](#tags)
-  - [Vacancies (company)](#vacancies-company)
+    - [Company-only endpoints](#company-only-endpoints)
+    - [My company](#my-company)
+    - [My profile](#my-profile)
+    - [Tags](#tags)
+    - [Vacancies (company)](#vacancies-company)
 - [Students](#students)
-  - [Student-only endpoints](#student-only-endpoints)
-  - [Student profile](#student-profile)
-  - [Student preferences](#student-preferences)
-  - [Student experiences](#student-experiences)
-  - [Student languages](#student-languages)
-  - [Student tags](#student-tags)
+    - [Student-only endpoints](#student-only-endpoints)
+    - [Student profile](#student-profile)
+    - [Student preferences](#student-preferences)
+    - [Student experiences](#student-experiences)
+    - [Student languages](#student-languages)
+    - [Student tags](#student-tags)
 - [Coordinators](#coordinators)
-  - [Coordinator-only endpoints](#coordinator-only-endpoints)
-  - [Companies (coordinator)](#companies-coordinator)
-  - [Users (coordinator)](#users-coordinator)
-  - [Vacancies (coordinator)](#vacancies-coordinator)
-  - [Student–coordinator assignments](#studentcoordinator-assignments-coordinator)
+    - [Coordinator-only endpoints](#coordinator-only-endpoints)
+    - [Companies (coordinator)](#companies-coordinator)
+    - [Users (coordinator)](#users-coordinator)
+    - [Vacancies (coordinator)](#vacancies-coordinator)
+    - [Student–coordinator assignments](#studentcoordinator-assignments-coordinator)
 - [Public data (no auth)](#public-data-no-auth)
-  - [List active companies](#list-active-companies)
-  - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
+    - [List active companies](#list-active-companies)
+    - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
 - [Reference](#reference)
-  - [Recommended flow for coordinators](#recommended-flow-for-coordinators)
-  - [Testing with Postman](#testing-with-postman)
-  - [HTTP status codes](#http-status-codes)
+    - [Recommended flow for coordinators](#recommended-flow-for-coordinators)
+    - [Testing with Postman](#testing-with-postman)
+    - [HTTP status codes](#http-status-codes)
 
 [↑ Back to top](#api-documentation-v1--front-end-reference)
 
@@ -73,47 +76,49 @@ For conventions on updating this doc and adding new API functionality, see [CONV
 
 Creates a new coordinator account. No auth required.
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/auth/register/coordinator` |
-| **Auth** | None |
+|            |                              |
+|------------|------------------------------|
+| **Method** | `POST`                       |
+| **Path**   | `/auth/register/coordinator` |
+| **Auth**   | None                         |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
-  "email": "coordinator@example.com",
-  "password": "yourpassword",
-  "first_name": "Jan",
-  "last_name": "Jansen"
+    "email": "coordinator@example.com",
+    "password": "yourpassword",
+    "first_name": "Jan",
+    "last_name": "Jansen"
 }
 ```
 
 </details>
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| email | string | Yes | Must be unique |
-| password | string | Yes | Min 6 characters |
-| first_name | string | Yes | |
-| last_name | string | Yes | |
+| Field      | Type   | Required | Notes            |
+|------------|--------|----------|------------------|
+| email      | string | Yes      | Must be unique   |
+| password   | string | Yes      | Min 6 characters |
+| first_name | string | Yes      |                  |
+| last_name  | string | Yes      |                  |
 
 <details>
 <summary><strong>Success (201) – Response body (JSON)</strong></summary>
 
 ```json
 {
-  "message": "Coordinator account succesvol aangemaakt",
-  "user": {
-    "id": 1,
-    "role": "coordinator",
-    "email": "coordinator@example.com",
-    "first_name": "Jan",
-    "last_name": "Jansen"
-  },
-  "links": { "self": "..." }
+    "message": "Coordinator account succesvol aangemaakt",
+    "user": {
+        "id": 1,
+        "role": "coordinator",
+        "email": "coordinator@example.com",
+        "first_name": "Jan",
+        "last_name": "Jansen"
+    },
+    "links": {
+        "self": "..."
+    }
 }
 ```
 
@@ -123,69 +128,71 @@ Creates a new coordinator account. No auth required.
 
 ### 2. Register as company (self-registration) (Team A only)
 
-Companies can register themselves. The company is created with `is_active: false` and does not appear in public company/vacancy listings until a **stage coordinator** approves it by setting `is_active` to `true` via [Update company](#update-company).
+Companies can register themselves. The company is created with `is_active: false` and does not appear in public
+company/vacancy listings until a **stage coordinator** approves it by setting `is_active` to `true`
+via [Update company](#update-company).
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/auth/register/company` |
-| **Auth** | None |
+|            |                          |
+|------------|--------------------------|
+| **Method** | `POST`                   |
+| **Path**   | `/auth/register/company` |
+| **Auth**   | None                     |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
-  "company": {
-    "name": "Acme Corp",
-    "industry_tag_id": null,
-    "email": "info@acme.com",
-    "phone": "+31201234567",
-    "size_category": null,
-    "photo_url": null
-  },
-  "location": {
-    "city": "Amsterdam",
-    "country": "Netherlands",
-    "address_line": "Main Street 1",
-    "postal_code": "1012 AB",
-    "lat": 52.3676,
-    "lon": 4.9041
-  },
-  "user": {
-    "email": "contact@acme.com",
-    "first_name": "Jan",
-    "middle_name": null,
-    "last_name": "Jansen",
-    "phone": "+31612345678"
-  },
-  "password": "securepassword123",
-  "password_confirmation": "securepassword123"
+    "company": {
+        "name": "Acme Corp",
+        "industry_tag_id": null,
+        "email": "info@acme.com",
+        "phone": "+31201234567",
+        "size_category": null,
+        "photo_url": null
+    },
+    "location": {
+        "city": "Amsterdam",
+        "country": "Netherlands",
+        "address_line": "Main Street 1",
+        "postal_code": "1012 AB",
+        "lat": 52.3676,
+        "lon": 4.9041
+    },
+    "user": {
+        "email": "contact@acme.com",
+        "first_name": "Jan",
+        "middle_name": null,
+        "last_name": "Jansen",
+        "phone": "+31612345678"
+    },
+    "password": "securepassword123",
+    "password_confirmation": "securepassword123"
 }
 ```
 
 </details>
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| company.name | string | Yes | Max 255 |
-| company.industry_tag_id | number | No | Must exist in `tags` |
-| company.email | string | No | Email, max 255 |
-| company.phone | string | No | Max 50 |
-| company.size_category | string | No | Max 50 |
-| company.photo_url | string | No | |
-| location.city | string | Yes | |
-| location.country | string | Yes | |
-| location.address_line | string | No | |
-| location.postal_code | string | No | Max 32 |
-| location.lat | number | No | |
-| location.lon | number | No | |
-| user.email | string | Yes | Unique |
-| user.first_name | string | Yes | Max 100 |
-| user.middle_name | string | No | Max 100 |
-| user.last_name | string | Yes | Max 100 |
-| user.phone | string | No | Max 50 |
-| password | string | Yes | Min 12, must be confirmed |
+| Field                   | Type   | Required | Notes                     |
+|-------------------------|--------|----------|---------------------------|
+| company.name            | string | Yes      | Max 255                   |
+| company.industry_tag_id | number | No       | Must exist in `tags`      |
+| company.email           | string | No       | Email, max 255            |
+| company.phone           | string | No       | Max 50                    |
+| company.size_category   | string | No       | Max 50                    |
+| company.photo_url       | string | No       |                           |
+| location.city           | string | Yes      |                           |
+| location.country        | string | Yes      |                           |
+| location.address_line   | string | No       |                           |
+| location.postal_code    | string | No       | Max 32                    |
+| location.lat            | number | No       |                           |
+| location.lon            | number | No       |                           |
+| user.email              | string | Yes      | Unique                    |
+| user.first_name         | string | Yes      | Max 100                   |
+| user.middle_name        | string | No       | Max 100                   |
+| user.last_name          | string | Yes      | Max 100                   |
+| user.phone              | string | No       | Max 50                    |
+| password                | string | Yes      | Min 12, must be confirmed |
 
 **Success (201):** Returns `data` (company, user, location) and `meta.token` / `meta.token_type` for immediate login.
 
@@ -195,19 +202,19 @@ Companies can register themselves. The company is created with `is_active: false
 
 Returns a JWT for all subsequent protected requests.
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/auth/login` |
-| **Auth** | None |
+|            |               |
+|------------|---------------|
+| **Method** | `POST`        |
+| **Path**   | `/auth/login` |
+| **Auth**   | None          |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
-  "email": "coordinator@example.com",
-  "password": "yourpassword"
+    "email": "coordinator@example.com",
+    "password": "yourpassword"
 }
 ```
 
@@ -218,18 +225,27 @@ Returns a JWT for all subsequent protected requests.
 
 ```json
 {
-  "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "token_type": "Bearer",
-  "data": { "id": 1, "role": "coordinator", "email": "...", "first_name": "...", ... }
+    "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+    "token_type": "Bearer",
+    "data": {
+        "id": 1,
+        "role": "coordinator",
+        "email": "...",
+        "first_name": "...",
+        ...
+    }
 }
 ```
-`data` is the authenticated user (same shape as `GET /auth/me`). Company users include `company_user` and `company`; students include `student_profile`.
+
+`data` is the authenticated user (same shape as `GET /auth/me`). Company users include `company_user` and `company`;
+students include `student_profile`.
 
 </details>
 
 **Error (401):** `{ "message": "Invalid credentials" }`
 
 **Usage:** Send the token on every protected request:
+
 ```http
 Authorization: Bearer <token>
 ```
@@ -238,11 +254,11 @@ Authorization: Bearer <token>
 
 ### 4. Current user (me)
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/auth/me` |
-| **Auth** | Bearer token required |
+|            |                       |
+|------------|-----------------------|
+| **Method** | `GET`                 |
+| **Path**   | `/auth/me`            |
+| **Auth**   | Bearer token required |
 
 **Success (200):** `{ "data": <user object> }` (full user as returned by Laravel auth).
 
@@ -250,11 +266,11 @@ Authorization: Bearer <token>
 
 ### 5. Logout
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/auth/logout` |
-| **Auth** | Bearer token required |
+|            |                       |
+|------------|-----------------------|
+| **Method** | `POST`                |
+| **Path**   | `/auth/logout`        |
+| **Auth**   | Bearer token required |
 
 **Success (200):** `{ "message": "Logged out" }`
 
@@ -262,11 +278,11 @@ Authorization: Bearer <token>
 
 ### 6. Refresh token
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/auth/refresh` |
-| **Auth** | Bearer token required |
+|            |                       |
+|------------|-----------------------|
+| **Method** | `POST`                |
+| **Path**   | `/auth/refresh`       |
+| **Auth**   | Bearer token required |
 
 **Success (200):** Same shape as login: `{ "token": "...", "token_type": "Bearer" }`
 
@@ -276,7 +292,8 @@ Authorization: Bearer <token>
 
 ### 7. Using JWT from front-ends (SPA / mobile)
 
-This section explains **how to implement authentication in a front-end** (React, Vue, Angular, mobile, etc.), **how to send the Bearer token**, how **refresh** works, and how to **prevent deep-linking into protected pages**.
+This section explains **how to implement authentication in a front-end** (React, Vue, Angular, mobile, etc.), **how to
+send the Bearer token**, how **refresh** works, and how to **prevent deep-linking into protected pages**.
 
 #### 7.1 Basic login flow
 
@@ -289,9 +306,11 @@ This section explains **how to implement authentication in a front-end** (React,
    }
    ```
 3. **Store the token** somewhere accessible to your HTTP client:
-   - For SPAs, a common (simple) option is `localStorage` (e.g. `localStorage.setItem('token', token)`).
-   - For higher security you can keep it **in memory only** (Redux/Pinia/Zustand/etc.) and re-login on full refresh. This avoids XSS-based token theft but requires a new login when the user reloads the page.
-4. After login, **navigate to your app’s protected area** (e.g. `/dashboard`) and start using the token on all protected calls.
+    - For SPAs, a common (simple) option is `localStorage` (e.g. `localStorage.setItem('token', token)`).
+    - For higher security you can keep it **in memory only** (Redux/Pinia/Zustand/etc.) and re-login on full refresh.
+      This avoids XSS-based token theft but requires a new login when the user reloads the page.
+4. After login, **navigate to your app’s protected area** (e.g. `/dashboard`) and start using the token on all protected
+   calls.
 
 #### 7.2 Sending the Bearer token
 
@@ -307,17 +326,18 @@ Authorization: Bearer <token>
 const token = localStorage.getItem('token');
 
 const res = await fetch('/api/v1/company', {
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  },
+    headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+    },
 });
 ```
 
 #### 7.3 How refresh works
 
 - JWTs are **time-limited**. When a token expires, protected endpoints will start returning **401 Unauthorized**.
-- To keep the user logged in without showing the login screen again, you can call `POST /api/v1/auth/refresh` with the **current (still-present) token** in the `Authorization` header.
+- To keep the user logged in without showing the login screen again, you can call `POST /api/v1/auth/refresh` with the *
+  *current (still-present) token** in the `Authorization` header.
 - The response has the same shape as login:
   ```json
   {
@@ -326,88 +346,89 @@ const res = await fetch('/api/v1/company', {
   }
   ```
 - After a successful refresh:
-  - **Replace** the old token in your storage (localStorage / memory) with the new value.
-  - All subsequent requests should use the new token.
+    - **Replace** the old token in your storage (localStorage / memory) with the new value.
+    - All subsequent requests should use the new token.
 
 **Typical pattern in front-ends:**
 
 1. Use a central HTTP client (e.g. a small wrapper around `fetch`).
 2. On **401 responses**, try to:
-   - Call `/auth/refresh` once.
-   - If refresh succeeds, update the stored token, retry the original request, and continue.
-   - If refresh fails (401 again), **log the user out** on the client (clear token + redirect to login).
+    - Call `/auth/refresh` once.
+    - If refresh succeeds, update the stored token, retry the original request, and continue.
+    - If refresh fails (401 again), **log the user out** on the client (clear token + redirect to login).
 
 **Example with a small `fetch` wrapper (simplified pseudo-code):**
 
 ```js
 async function apiRequest(path, options = {}) {
-  const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-  const res = await fetch(`/api/v1${path}`, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-
-  // If token expired, try refresh once
-  if (res.status === 401 && token) {
-    const refreshRes = await fetch('/api/v1/auth/refresh', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await fetch(`/api/v1${path}`, {
+        ...options,
+        headers: {
+            ...(options.headers || {}),
+            'Content-Type': 'application/json',
+            ...(token ? {Authorization: `Bearer ${token}`} : {}),
+        },
     });
 
-    if (!refreshRes.ok) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-      throw new Error('Session expired');
+    // If token expired, try refresh once
+    if (res.status === 401 && token) {
+        const refreshRes = await fetch('/api/v1/auth/refresh', {
+            method: 'POST',
+            headers: {Authorization: `Bearer ${token}`},
+        });
+
+        if (!refreshRes.ok) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            throw new Error('Session expired');
+        }
+
+        const refreshData = await refreshRes.json();
+        const newToken = refreshData.token;
+        localStorage.setItem('token', newToken);
+
+        // Retry original request with new token
+        const retryRes = await fetch(`/api/v1${path}`, {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${newToken}`,
+            },
+        });
+
+        return retryRes;
     }
 
-    const refreshData = await refreshRes.json();
-    const newToken = refreshData.token;
-    localStorage.setItem('token', newToken);
-
-    // Retry original request with new token
-    const retryRes = await fetch(`/api/v1${path}`, {
-      ...options,
-      headers: {
-        ...(options.headers || {}),
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${newToken}`,
-      },
-    });
-
-    return retryRes;
-  }
-
-  return res;
+    return res;
 }
 ```
 
 #### 7.4 Preventing deep-linking into protected routes
 
-“Deep-linking” here means typing a protected URL directly into the browser (e.g. `/app/company`) or refreshing on it while **not authenticated**. To prevent this, your front-end should:
+“Deep-linking” here means typing a protected URL directly into the browser (e.g. `/app/company`) or refreshing on it
+while **not authenticated**. To prevent this, your front-end should:
 
 1. **Track auth state** (e.g. `isAuthenticated`, plus the current token).
 2. **Protect routes** with guards that:
-   - Check if there is a token.
-   - Optionally call `/auth/me` once on app startup to validate the token and load the user.
-   - Redirect to `/login` when there is no valid token.
+    - Check if there is a token.
+    - Optionally call `/auth/me` once on app startup to validate the token and load the user.
+    - Redirect to `/login` when there is no valid token.
 
 **Example (React Router-like pseudo-code):**
 
 ```jsx
-function PrivateRoute({ children }) {
-  const token = localStorage.getItem('token');
+function PrivateRoute({children}) {
+    const token = localStorage.getItem('token');
 
-  if (!token) {
-    // Not logged in → send to login
-    return <Navigate to="/login" replace />;
-  }
+    if (!token) {
+        // Not logged in → send to login
+        return <Navigate to="/login" replace/>;
+    }
 
-  return children;
+    return children;
 }
 
 // Usage:
@@ -418,14 +439,15 @@ On **initial app load**, a common pattern is:
 
 1. Read the token from storage.
 2. If present, call `/auth/me` (with `Authorization: Bearer <token>`) to:
-   - Confirm it is still valid.
-   - Get the current user (role, company, student profile, etc.).
+    - Confirm it is still valid.
+    - Get the current user (role, company, student profile, etc.).
 3. If `/auth/me` fails with 401, clear the token and send the user to `/login`.
 
 This ensures that:
 
 - Direct links to protected pages **only work** when there is a valid token.
-- When the token is missing or invalid, users are **always redirected to the login page**, even if they try to deep-link or refresh on a protected route.
+- When the token is missing or invalid, users are **always redirected to the login page**, even if they try to deep-link
+  or refresh on a protected route.
 
 [↑ Back to index](#index)
 
@@ -453,11 +475,11 @@ Company users can view and update **their own company** (the company they are li
 
 ### Get my company
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/company` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/company`                  |
+| **Auth**   | Bearer token + company role |
 
 Returns the authenticated user’s company.
 
@@ -467,40 +489,41 @@ Returns the authenticated user’s company.
 
 ### Update my company
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/company` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT` or `PATCH`            |
+| **Path**   | `/company`                  |
+| **Auth**   | Bearer token + company role |
 
 Update your company. Only include fields you want to change.
 
 **Request body (all optional):**
+
 ```json
 {
-  "name": "Acme Corp",
-  "industry_tag_id": 1,
-  "email": "info@acme.com",
-  "phone": "+31201234567",
-  "size_category": "medium",
-  "photo_url": null,
-  "banner_url": null,
-  "description": null,
-  "is_active": true
+    "name": "Acme Corp",
+    "industry_tag_id": 1,
+    "email": "info@acme.com",
+    "phone": "+31201234567",
+    "size_category": "medium",
+    "photo_url": null,
+    "banner_url": null,
+    "description": null,
+    "is_active": true
 }
 ```
 
-| Field | Type | Notes |
-|-------|------|--------|
-| name | string | Max 255 |
+| Field           | Type           | Notes                |
+|-----------------|----------------|----------------------|
+| name            | string         | Max 255              |
 | industry_tag_id | number or null | Must exist in `tags` |
-| email | string | Max 255 |
-| phone | string | Max 50 |
-| size_category | string | Max 50 |
-| photo_url | string | |
-| banner_url | string | Max 512 |
-| description | string | |
-| is_active | boolean | |
+| email           | string         | Max 255              |
+| phone           | string         | Max 50               |
+| size_category   | string         | Max 50               |
+| photo_url       | string         |                      |
+| banner_url      | string         | Max 512              |
+| description     | string         |                      |
+| is_active       | boolean        |                      |
 
 **Success (200):** `{ "data": <updated company>, "links": { "self": "..." } }`
 
@@ -514,33 +537,44 @@ Company users can view and update **their own profile** (user fields and job tit
 
 ### Get my profile
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/company/profile` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/company/profile`          |
+| **Auth**   | Bearer token + company role |
 
 Returns the authenticated user’s profile including `company_user` and `company`.  
-**Note:** `GET /auth/me` also returns the current user and, for company users, includes `company_user` and `company` when loaded.
+**Note:** `GET /auth/me` also returns the current user and, for company users, includes `company_user` and `company`when
+loaded.
 
 **Success (200):**
+
 ```json
 {
-  "data": {
-    "id": 1,
-    "role": "company",
-    "email": "hr@acme.com",
-    "first_name": "Jane",
-    "middle_name": null,
-    "last_name": "Doe",
-    "phone": null,
-    "profile_photo_url": null,
-    "created_at": "...",
-    "updated_at": "...",
-    "company_user": { "company_id": 1, "job_title": "HR Manager" },
-    "company": { "id": 1, "name": "Acme Corp", ... }
-  },
-  "links": { "self": "..." }
+    "data": {
+        "id": 1,
+        "role": "company",
+        "email": "hr@acme.com",
+        "first_name": "Jane",
+        "middle_name": null,
+        "last_name": "Doe",
+        "phone": null,
+        "profile_photo_url": null,
+        "created_at": "...",
+        "updated_at": "...",
+        "company_user": {
+            "company_id": 1,
+            "job_title": "HR Manager"
+        },
+        "company": {
+            "id": 1,
+            "name": "Acme Corp",
+            ...
+        }
+    },
+    "links": {
+        "self": "..."
+    }
 }
 ```
 
@@ -548,36 +582,38 @@ Returns the authenticated user’s profile including `company_user` and `company
 
 ### Update my profile
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/company/profile` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT` or `PATCH`            |
+| **Path**   | `/company/profile`          |
+| **Auth**   | Bearer token + company role |
 
-Update your user fields and/or job title. Only include fields you want to change. Omit `password` or send `null` to leave it unchanged.
+Update your user fields and/or job title. Only include fields you want to change. Omit `password` or send `null` to
+leave it unchanged.
 
 **Request body (all optional):**
+
 ```json
 {
-  "first_name": "Jane",
-  "middle_name": null,
-  "last_name": "Doe",
-  "phone": "+31612345678",
-  "email": "jane.doe@acme.com",
-  "password": null,
-  "job_title": "HR Manager"
+    "first_name": "Jane",
+    "middle_name": null,
+    "last_name": "Doe",
+    "phone": "+31612345678",
+    "email": "jane.doe@acme.com",
+    "password": null,
+    "job_title": "HR Manager"
 }
 ```
 
-| Field | Type | Notes |
-|-------|------|--------|
-| first_name | string | Max 100 |
-| middle_name | string or null | Max 100 |
-| last_name | string | Max 100 |
-| phone | string or null | Max 50 |
-| email | string | Must be unique (excluding current user) |
-| password | string or null | Min 6; omit or null to keep current |
-| job_title | string or null | Max 255 |
+| Field       | Type           | Notes                                   |
+|-------------|----------------|-----------------------------------------|
+| first_name  | string         | Max 100                                 |
+| middle_name | string or null | Max 100                                 |
+| last_name   | string         | Max 100                                 |
+| phone       | string or null | Max 50                                  |
+| email       | string         | Must be unique (excluding current user) |
+| password    | string or null | Min 6; omit or null to keep current     |
+| job_title   | string or null | Max 255                                 |
 
 **Success (200):** `{ "data": <updated profile>, "links": { "self": "..." } }`
 
@@ -587,36 +623,40 @@ Update your user fields and/or job title. Only include fields you want to change
 
 ## Tags
 
-Used when creating vacancies: company users can **select existing tags** (from this list) or **create new tags** inline in the vacancy payload.
+Used when creating vacancies: company users can **select existing tags** (from this list) or **create new tags** inline
+in the vacancy payload.
 
 ### List tags
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/tags` |
-| **Auth** | Bearer token required |
+|            |                       |
+|------------|-----------------------|
+| **Method** | `GET`                 |
+| **Path**   | `/tags`               |
+| **Auth**   | Bearer token required |
 
 **Query parameters:**
 
-| Param | Type | Description |
-|-------|------|-------------|
+| Param    | Type   | Description                                              |
+|----------|--------|----------------------------------------------------------|
 | tag_type | string | Optional. Filter by tag type (e.g. `skill`, `industry`). |
 
 **Success (200):**
+
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "name": "PHP",
-      "tag_type": "skill",
-      "is_active": true,
-      "created_at": "...",
-      "updated_at": "..."
+    "data": [
+        {
+            "id": 1,
+            "name": "PHP",
+            "tag_type": "skill",
+            "is_active": true,
+            "created_at": "...",
+            "updated_at": "..."
+        }
+    ],
+    "links": {
+        "self": "..."
     }
-  ],
-  "links": { "self": "..." }
 }
 ```
 
@@ -626,47 +666,55 @@ Used when creating vacancies: company users can **select existing tags** (from t
 
 ## Vacancies (company)
 
-Company users create and list vacancies for their own company. Each vacancy can have **tags**: either by **selecting existing tag IDs** (from `GET /tags`) or by **creating new tags** by sending `name` and `tag_type` in the payload.
+Company users create and list vacancies for their own company. Each vacancy can have **tags**: either by **selecting
+existing tag IDs** (from `GET /tags`) or by **creating new tags** by sending `name` and `tag_type` in the payload.
 
 ### List company vacancies
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/company/vacancies` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/company/vacancies`        |
+| **Auth**   | Bearer token + company role |
 
 Returns all vacancies for the authenticated user’s company.
 
 **Success (200):**
+
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "company_id": 1,
-      "location_id": null,
-      "title": "Backend developer",
-      "hours_per_week": 40,
-      "description": "...",
-      "offer_text": null,
-      "expectations_text": null,
-      "status": null,
-      "created_at": "...",
-      "updated_at": "...",
-      "location": null,
-      "vacancy_requirements": [
+    "data": [
         {
-          "vacancy_id": 1,
-          "tag_id": 1,
-          "requirement_type": "skill",
-          "importance": null,
-          "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+            "id": 1,
+            "company_id": 1,
+            "location_id": null,
+            "title": "Backend developer",
+            "hours_per_week": 40,
+            "description": "...",
+            "offer_text": null,
+            "expectations_text": null,
+            "status": null,
+            "created_at": "...",
+            "updated_at": "...",
+            "location": null,
+            "vacancy_requirements": [
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 1,
+                    "requirement_type": "skill",
+                    "importance": null,
+                    "tag": {
+                        "id": 1,
+                        "name": "PHP",
+                        "tag_type": "skill"
+                    }
+                }
+            ]
         }
-      ]
+    ],
+    "links": {
+        "self": "..."
     }
-  ],
-  "links": { "self": "..." }
 }
 ```
 
@@ -674,103 +722,125 @@ Returns all vacancies for the authenticated user’s company.
 
 ### Create vacancy
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/company/vacancies` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `POST`                      |
+| **Path**   | `/company/vacancies`        |
+| **Auth**   | Bearer token + company role |
 
 **Request body:**
+
 ```json
 {
-  "title": "Backend developer",
-  "location_id": null,
-  "hours_per_week": 40,
-  "description": "We are looking for...",
-  "offer_text": null,
-  "expectations_text": null,
-  "status": "open",
-  "tags": [
-    { "id": 1 },
-    { "name": "Laravel", "tag_type": "skill" },
-    { "id": 2, "requirement_type": "skill", "importance": 1 }
-  ]
+    "title": "Backend developer",
+    "location_id": null,
+    "hours_per_week": 40,
+    "description": "We are looking for...",
+    "offer_text": null,
+    "expectations_text": null,
+    "status": "open",
+    "tags": [
+        {
+            "id": 1
+        },
+        {
+            "name": "Laravel",
+            "tag_type": "skill"
+        },
+        {
+            "id": 2,
+            "requirement_type": "skill",
+            "importance": 1
+        }
+    ]
 }
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| title | string | Yes | Max 255 |
-| location_id | number | No | Must be a location of your company (`company_locations`) |
-| hours_per_week | number | No | 1–168 |
-| description | string | No | |
-| offer_text | string | No | |
-| expectations_text | string | No | |
-| status | string | No | Max 32 |
-| tags | array | No | List of tag references (see below) |
+| Field             | Type   | Required | Notes                                                    |
+|-------------------|--------|----------|----------------------------------------------------------|
+| title             | string | Yes      | Max 255                                                  |
+| location_id       | number | No       | Must be a location of your company (`company_locations`) |
+| hours_per_week    | number | No       | 1–168                                                    |
+| description       | string | No       |                                                          |
+| offer_text        | string | No       |                                                          |
+| expectations_text | string | No       |                                                          |
+| status            | string | No       | Max 32                                                   |
+| tags              | array  | No       | List of tag references (see below)                       |
 
 **Tags array** – each item is either:
 
-- **Existing tag:** `{ "id": <tag_id> }`. Optional per item: `requirement_type` (string, max 16, default `"skill"`), `importance` (number).
-- **New tag:** `{ "name": "<name>", "tag_type": "<tag_type>" }`. The tag is created if it doesn’t exist (matched by name + tag_type). Optional: `requirement_type`, `importance`.
+- **Existing tag:** `{ "id": <tag_id> }`. Optional per item: `requirement_type` (string, max 16, default `"skill"`),
+  `importance` (number).
+- **New tag:** `{ "name": "<name>", "tag_type": "<tag_type>" }`. The tag is created if it doesn’t exist (matched by
+  name + tag_type). Optional: `requirement_type`, `importance`.
 
 **Success (201):** `{ "data": <vacancy with location and vacancy_requirements loaded>, "links": { "self": "..." } }`  
-**Error (422):** Validation errors, or `"Location does not belong to your company."` if `location_id` is not one of your company’s locations.
+**Error (422):** Validation errors, or `"Location does not belong to your company."` if `location_id` is not one of your
+company’s locations.
 
 ---
 
 ### Get vacancy
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/company/vacancies/{id}` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/company/vacancies/{id}`   |
+| **Auth**   | Bearer token + company role |
 
 Returns a single vacancy. The vacancy must belong to the authenticated user's company; otherwise **404** is returned.
 
-**Success (200):** `{ "data": <vacancy with location and vacancy_requirements.tag>, "links": { "self": "...", "collection": "..." } }`  
+**Success (200):**
+`{ "data": <vacancy with location and vacancy_requirements.tag>, "links": { "self": "...", "collection": "..." } }`  
 **Error (404):** Vacancy not found or not owned by your company.
 
 ---
 
 ### Update vacancy
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/company/vacancies/{id}` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT` or `PATCH`            |
+| **Path**   | `/company/vacancies/{id}`   |
+| **Auth**   | Bearer token + company role |
 
-Update vacancy fields and/or replace its tags. Only include fields you want to change. To update tags, send a `tags` array (same format as [Create vacancy](#create-vacancy)); existing requirements are replaced. Omit `tags` to leave tags unchanged.
+Update vacancy fields and/or replace its tags. Only include fields you want to change. To update tags, send a `tags`
+array (same format as [Create vacancy](#create-vacancy)); existing requirements are replaced. Omit `tags` to leave tags
+unchanged.
 
 **Request body (all fields optional):**
+
 ```json
 {
-  "title": "Senior Backend developer",
-  "location_id": 1,
-  "hours_per_week": 36,
-  "description": "Updated description...",
-  "offer_text": null,
-  "expectations_text": null,
-  "status": "closed",
-  "tags": [
-    { "id": 1 },
-    { "name": "Laravel", "tag_type": "skill" }
-  ]
+    "title": "Senior Backend developer",
+    "location_id": 1,
+    "hours_per_week": 36,
+    "description": "Updated description...",
+    "offer_text": null,
+    "expectations_text": null,
+    "status": "closed",
+    "tags": [
+        {
+            "id": 1
+        },
+        {
+            "name": "Laravel",
+            "tag_type": "skill"
+        }
+    ]
 }
 ```
 
-| Field | Type | Notes |
-|-------|------|--------|
-| title | string | Max 255 |
-| location_id | number or null | Must be a location of your company, or null to clear |
-| hours_per_week | number | 1–168 |
-| description | string | |
-| offer_text | string | |
-| expectations_text | string | |
-| status | string | Max 32 |
-| tags | array | Same format as create; replaces all existing tags on the vacancy |
+| Field             | Type           | Notes                                                            |
+|-------------------|----------------|------------------------------------------------------------------|
+| title             | string         | Max 255                                                          |
+| location_id       | number or null | Must be a location of your company, or null to clear             |
+| hours_per_week    | number         | 1–168                                                            |
+| description       | string         |                                                                  |
+| offer_text        | string         |                                                                  |
+| expectations_text | string         |                                                                  |
+| status            | string         | Max 32                                                           |
+| tags              | array          | Same format as create; replaces all existing tags on the vacancy |
 
 **Success (200):** `{ "data": <updated vacancy>, "links": { "self": "...", "collection": "..." } }`  
 **Error (404):** Vacancy not found or not owned by your company.  
@@ -780,16 +850,124 @@ Update vacancy fields and/or replace its tags. Only include fields you want to c
 
 ### Delete vacancy
 
-| | |
-|---|---|
-| **Method** | `DELETE` |
-| **Path** | `/company/vacancies/{id}` |
-| **Auth** | Bearer token + company role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `DELETE`                    |
+| **Path**   | `/company/vacancies/{id}`   |
+| **Auth**   | Bearer token + company role |
 
 Deletes the vacancy. The vacancy must belong to the authenticated user's company; otherwise **404** is returned.
 
 **Success (204):** No content.  
 **Error (404):** Vacancy not found or not owned by your company.
+
+### List comments on vacancy
+
+|            |                                         |
+|------------|-----------------------------------------|
+| **Method** | `GET`                                   |
+| **Path**   | `/company/vacancies/{vacancy}/comments` |
+| **Auth**   | Bearer token + company role             |
+
+**URL parameters:**
+
+- `vacancy` (number): The vacancy ID.
+
+**Success (200):**
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "vacancy_id": 1,
+            "author_user_id": 2,
+            "comment": "Looking for a candidate with strong PHP skills.",
+            "created_at": "2024-01-01T12:00:00.000000Z",
+            "updated_at": "2024-01-01T12:00:00.000000Z",
+            "author": {
+                "id": 2,
+                "first_name": "Alex",
+                "last_name": "Coordinator"
+            }
+        }
+    ],
+    "links": {
+        "self": "/api/v1/company/vacancies/1/comments"
+    }
+}
+```
+
+**Error (403):** `{ "message": "Forbidden" }` — Vacancy not owned by your company.
+
+---
+
+### Update vacancy comment
+
+|            |                                         |
+|------------|-----------------------------------------|
+| **Method** | `PATCH` or `PUT`                        |
+| **Path**   | `/company/vacancies/comments/{comment}` |
+| **Auth**   | Bearer token + company role             |
+
+**URL parameters:**
+
+- `comment` (number): The comment ID.
+
+**Request body:**
+
+```json
+{
+    "comment": "Updated comment text from company user."
+}
+```
+
+| Field   | Type   | Required | Notes    |
+|---------|--------|----------|----------|
+| comment | string | Yes      | Max 1000 |
+
+**Success (200):**
+
+```json
+{
+    "message": "Comment updated successfully.",
+    "data": {
+        "id": 1,
+        "vacancy_id": 1,
+        "author_user_id": 2,
+        "comment": "Updated comment text from company user.",
+        "created_at": "2024-01-01T12:00:00.000000Z",
+        "updated_at": "2024-01-02T13:00:00.000000Z"
+    },
+    "links": {
+        "self": "/api/v1/company/vacancies/comments/1"
+    }
+}
+```
+
+**Error (403):** `{ "message": "Forbidden" }` — Comment does not belong to a vacancy of your company.
+**Error (404):** `{ "message": "Comment not found." }`
+**Error (422):** Validation error.
+
+---
+
+### Delete vacancy comment
+
+|            |                                         |
+|------------|-----------------------------------------|
+| **Method** | `DELETE`                                |
+| **Path**   | `/company/vacancies/comments/{comment}` |
+| **Auth**   | Bearer token + company role             |
+
+**URL parameters:**
+
+- `comment` (number): The comment ID.
+
+**Success (200):**
+`{ "message": "Comment deleted successfully.", "links": { "self": "/api/v1/company/vacancies/comments/1" } }`
+
+**Error (403):** `{ "message": "Forbidden" }` — Comment does not belong to a vacancy of your company.
+**Error (404):** `{ "message": "Comment not found." }`
 
 [↑ Back to index](#index)
 
@@ -800,7 +978,7 @@ Deletes the vacancy. The vacancy must belong to the authenticated user's company
 All routes below require:
 
 1. **Valid JWT** in `Authorization: Bearer <token>`.
-2. **Logged-in user role = student.**  
+2. **Logged-in user role = student.**
    Otherwise you get **403** (e.g. "Forbidden. Student role required.").
 
 [↑ Back to index](#index)
@@ -813,45 +991,56 @@ Students can view and update their own profile (user fields + student_profile).
 
 ### Get student profile
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/profile` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/student/profile`          |
+| **Auth**   | Bearer token + student role |
 
 Returns the authenticated student's full profile including experiences, tags, languages, and preferences.
 
 **Success (200):**
+
 ```json
 {
-  "data": {
-    "id": 1,
-    "role": "student",
-    "email": "student@example.com",
-    "first_name": "John",
-    "middle_name": null,
-    "last_name": "Doe",
-    "phone": "+31612345678",
-    "profile_photo_url": null,
-    "created_at": "...",
-    "updated_at": "...",
-    "student_profile": {
-      "headline": "Junior Developer",
-      "bio": "Passionate about coding...",
-      "address_line": "Main Street 1",
-      "postal_code": "1234AB",
-      "city": "Amsterdam",
-      "country": "Netherlands",
-      "searching_status": "active",
-      "exclude_demographics": false,
-      "exclude_location": false
+    "data": {
+        "id": 1,
+        "role": "student",
+        "email": "student@example.com",
+        "first_name": "John",
+        "middle_name": null,
+        "last_name": "Doe",
+        "phone": "+31612345678",
+        "profile_photo_url": null,
+        "created_at": "...",
+        "updated_at": "...",
+        "student_profile": {
+            "headline": "Junior Developer",
+            "bio": "Passionate about coding...",
+            "address_line": "Main Street 1",
+            "postal_code": "1234AB",
+            "city": "Amsterdam",
+            "country": "Netherlands",
+            "searching_status": "active",
+            "exclude_demographics": false,
+            "exclude_location": false
+        },
+        "student_experiences": [
+            ...
+        ],
+        "student_tags": [
+            ...
+        ],
+        "student_languages": [
+            ...
+        ],
+        "student_preferences": {
+            ...
+        }
     },
-    "student_experiences": [...],
-    "student_tags": [...],
-    "student_languages": [...],
-    "student_preferences": {...}
-  },
-  "links": { "self": "..." }
+    "links": {
+        "self": "..."
+    }
 }
 ```
 
@@ -859,52 +1048,53 @@ Returns the authenticated student's full profile including experiences, tags, la
 
 ### Update student profile
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/student/profile` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT` or `PATCH`            |
+| **Path**   | `/student/profile`          |
+| **Auth**   | Bearer token + student role |
 
 Update user fields and/or student profile fields. Only include fields you want to change.
 
 **Request body (all optional):**
+
 ```json
 {
-  "first_name": "John",
-  "middle_name": null,
-  "last_name": "Doe",
-  "phone": "+31612345678",
-  "email": "john.doe@example.com",
-  "password": "newpassword",
-  "headline": "Junior Full-Stack Developer",
-  "bio": "Passionate about building web applications...",
-  "address_line": "Main Street 1",
-  "postal_code": "1234AB",
-  "city": "Amsterdam",
-  "country": "Netherlands",
-  "searching_status": "active",
-  "exclude_demographics": false,
-  "exclude_location": false
+    "first_name": "John",
+    "middle_name": null,
+    "last_name": "Doe",
+    "phone": "+31612345678",
+    "email": "john.doe@example.com",
+    "password": "newpassword",
+    "headline": "Junior Full-Stack Developer",
+    "bio": "Passionate about building web applications...",
+    "address_line": "Main Street 1",
+    "postal_code": "1234AB",
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "searching_status": "active",
+    "exclude_demographics": false,
+    "exclude_location": false
 }
 ```
 
-| Field | Type | Notes |
-|-------|------|--------|
-| first_name | string | Max 100 |
-| middle_name | string or null | Max 100 |
-| last_name | string | Max 100 |
-| phone | string or null | Max 50 |
-| email | string | Must be unique (excluding current user) |
-| password | string or null | Min 6; omit or null to keep current |
-| headline | string or null | Max 255 |
-| bio | string or null | |
-| address_line | string or null | Max 255 |
-| postal_code | string or null | Max 20 |
-| city | string or null | Max 100 |
-| country | string or null | Max 100 |
-| searching_status | string or null | Max 50 |
-| exclude_demographics | boolean | |
-| exclude_location | boolean | |
+| Field                | Type           | Notes                                   |
+|----------------------|----------------|-----------------------------------------|
+| first_name           | string         | Max 100                                 |
+| middle_name          | string or null | Max 100                                 |
+| last_name            | string         | Max 100                                 |
+| phone                | string or null | Max 50                                  |
+| email                | string         | Must be unique (excluding current user) |
+| password             | string or null | Min 6; omit or null to keep current     |
+| headline             | string or null | Max 255                                 |
+| bio                  | string or null |                                         |
+| address_line         | string or null | Max 255                                 |
+| postal_code          | string or null | Max 20                                  |
+| city                 | string or null | Max 100                                 |
+| country              | string or null | Max 100                                 |
+| searching_status     | string or null | Max 50                                  |
+| exclude_demographics | boolean        |                                         |
+| exclude_location     | boolean        |                                         |
 
 **Success (200):** `{ "message": "Profile updated successfully.", "data": <full profile>, "links": {...} }`
 
@@ -912,104 +1102,107 @@ Update user fields and/or student profile fields. Only include fields you want t
 
 ### View student profile (by ID)
 
-**Allowed roles:** Coordinator, Company user  
-Coordinators and company users can view any student's full profile including experiences, tags, languages, and preferences.
+**Allowed roles:** Coordinator, Company user
+Coordinators and company users can view any student's full profile including experiences, tags, languages, and
+preferences.
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/{student}` |
-| **Auth** | Bearer token + coordinator or company role |
+|            |                                            |
+|------------|--------------------------------------------|
+| **Method** | `GET`                                      |
+| **Path**   | `/student/{student}`                       |
+| **Auth**   | Bearer token + coordinator or company role |
 
 **URL parameters:**
+
 - `student` (number): The student's user ID.
 
 **Success (200):**
+
 ```json
 {
-  "data": {
-    "id": 1,
-    "first_name": "John",
-    "middle_name": null,
-    "last_name": "Doe",
-    "email": "john.doe@example.com",
-    "profile_photo_url": null,
-    "student_profile": {
-      "id": 1,
-      "user_id": 1,
-      "headline": "Junior Developer",
-      "bio": "Passionate about coding...",
-      "address_line": "Main Street 1",
-      "postal_code": "1234AB",
-      "city": "Amsterdam",
-      "country": "Netherlands",
-      "searching_status": "active",
-      "exclude_demographics": false,
-      "exclude_location": false
-    },
-    "experiences": [
-      {
+    "data": {
         "id": 1,
-        "user_id": 1,
-        "title": "Intern",
-        "company_name": "Acme Corp",
-        "start_date": "2024-01-01",
-        "end_date": "2024-06-30",
-        "description": "Worked on backend systems"
-      }
-    ],
-    "tags": [
-      {
-        "id": 1,
-        "user_id": 1,
-        "tag_id": 5,
-        "weight": 3,
-        "tag": {
-          "id": 5,
-          "name": "PHP",
-          "tag_type": "skill"
-        }
-      }
-    ],
-    "languages": [
-      {
-        "id": 1,
-        "user_id": 1,
-        "language_id": 1,
-        "language_level_id": 2,
-        "language": {
-          "id": 1,
-          "name": "English"
+        "first_name": "John",
+        "middle_name": null,
+        "last_name": "Doe",
+        "email": "john.doe@example.com",
+        "profile_photo_url": null,
+        "student_profile": {
+            "id": 1,
+            "user_id": 1,
+            "headline": "Junior Developer",
+            "bio": "Passionate about coding...",
+            "address_line": "Main Street 1",
+            "postal_code": "1234AB",
+            "city": "Amsterdam",
+            "country": "Netherlands",
+            "searching_status": "active",
+            "exclude_demographics": false,
+            "exclude_location": false
         },
-        "language_level": {
-          "id": 2,
-          "name": "Intermediate"
+        "experiences": [
+            {
+                "id": 1,
+                "user_id": 1,
+                "title": "Intern",
+                "company_name": "Acme Corp",
+                "start_date": "2024-01-01",
+                "end_date": "2024-06-30",
+                "description": "Worked on backend systems"
+            }
+        ],
+        "tags": [
+            {
+                "id": 1,
+                "user_id": 1,
+                "tag_id": 5,
+                "weight": 3,
+                "tag": {
+                    "id": 5,
+                    "name": "PHP",
+                    "tag_type": "skill"
+                }
+            }
+        ],
+        "languages": [
+            {
+                "id": 1,
+                "user_id": 1,
+                "language_id": 1,
+                "language_level_id": 2,
+                "language": {
+                    "id": 1,
+                    "name": "English"
+                },
+                "language_level": {
+                    "id": 2,
+                    "name": "Intermediate"
+                }
+            }
+        ],
+        "preferences": {
+            "id": 1,
+            "user_id": 1,
+            "desired_role_tag_id": 2,
+            "hours_per_week_min": 32,
+            "hours_per_week_max": 40,
+            "max_distance_km": 50,
+            "has_drivers_license": true,
+            "notes": "Prefer remote work",
+            "desired_role_tag": {
+                "id": 2,
+                "name": "Backend Developer",
+                "tag_type": "role"
+            }
         }
-      }
-    ],
-    "preferences": {
-      "id": 1,
-      "user_id": 1,
-      "desired_role_tag_id": 2,
-      "hours_per_week_min": 32,
-      "hours_per_week_max": 40,
-      "max_distance_km": 50,
-      "has_drivers_license": true,
-      "notes": "Prefer remote work",
-      "desired_role_tag": {
-        "id": 2,
-        "name": "Backend Developer",
-        "tag_type": "role"
-      }
+    },
+    "links": {
+        "self": "/api/v1/student/1"
     }
-  },
-  "links": {
-    "self": "/api/v1/student/1"
-  }
 }
 ```
 
-**Error (403):** `{ "message": "Unauthorized" }` – User is not a coordinator or company user.  
+**Error (403):** `{ "message": "Unauthorized" }` – User is not a coordinator or company user.
 **Error (404):** `{ "message": "User is not a student" }` – The specified user exists but is not a student.
 
 [↑ Back to index](#index)
@@ -1020,25 +1213,32 @@ Coordinators and company users can view any student's full profile including exp
 
 ### Get student preferences
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/preferences` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/student/preferences`      |
+| **Auth**   | Bearer token + student role |
 
 **Success (200):**
+
 ```json
 {
-  "data": {
-    "desired_role_tag_id": 2,
-    "hours_per_week_min": 32,
-    "hours_per_week_max": 40,
-    "max_distance_km": 50,
-    "has_drivers_license": true,
-    "notes": "Prefer remote work",
-    "desired_role_tag": { "id": 2, "name": "Backend Developer", "tag_type": "role" }
-  },
-  "links": { "self": "..." }
+    "data": {
+        "desired_role_tag_id": 2,
+        "hours_per_week_min": 32,
+        "hours_per_week_max": 40,
+        "max_distance_km": 50,
+        "has_drivers_license": true,
+        "notes": "Prefer remote work",
+        "desired_role_tag": {
+            "id": 2,
+            "name": "Backend Developer",
+            "tag_type": "role"
+        }
+    },
+    "links": {
+        "self": "..."
+    }
 }
 ```
 
@@ -1046,32 +1246,33 @@ Coordinators and company users can view any student's full profile including exp
 
 ### Update student preferences
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/student/preferences` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT` or `PATCH`            |
+| **Path**   | `/student/preferences`      |
+| **Auth**   | Bearer token + student role |
 
 **Request body (all optional):**
+
 ```json
 {
-  "desired_role_tag_id": 2,
-  "hours_per_week_min": 32,
-  "hours_per_week_max": 40,
-  "max_distance_km": 50,
-  "has_drivers_license": true,
-  "notes": "Prefer remote work"
+    "desired_role_tag_id": 2,
+    "hours_per_week_min": 32,
+    "hours_per_week_max": 40,
+    "max_distance_km": 50,
+    "has_drivers_license": true,
+    "notes": "Prefer remote work"
 }
 ```
 
-| Field | Type | Notes |
-|-------|------|--------|
-| desired_role_tag_id | number or null | Must exist in `tags` |
-| hours_per_week_min | number or null | 1–168 |
-| hours_per_week_max | number or null | 1–168, must be >= min |
-| max_distance_km | number or null | Min 1 |
-| has_drivers_license | boolean | |
-| notes | string or null | |
+| Field               | Type           | Notes                 |
+|---------------------|----------------|-----------------------|
+| desired_role_tag_id | number or null | Must exist in `tags`  |
+| hours_per_week_min  | number or null | 1–168                 |
+| hours_per_week_max  | number or null | 1–168, must be >= min |
+| max_distance_km     | number or null | Min 1                 |
+| has_drivers_license | boolean        |                       |
+| notes               | string or null |                       |
 
 **Success (200):** `{ "message": "Preferences updated successfully.", "data": <preferences>, "links": {...} }`
 
@@ -1083,26 +1284,29 @@ Coordinators and company users can view any student's full profile including exp
 
 ### List student experiences
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/experiences` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/student/experiences`      |
+| **Auth**   | Bearer token + student role |
 
 **Success (200):**
+
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "title": "Intern",
-      "company_name": "Acme Corp",
-      "start_date": "2024-01-01",
-      "end_date": "2024-06-30",
-      "description": "Worked on backend systems"
+    "data": [
+        {
+            "id": 1,
+            "title": "Intern",
+            "company_name": "Acme Corp",
+            "start_date": "2024-01-01",
+            "end_date": "2024-06-30",
+            "description": "Worked on backend systems"
+        }
+    ],
+    "links": {
+        "self": "..."
     }
-  ],
-  "links": { "self": "..." }
 }
 ```
 
@@ -1110,30 +1314,31 @@ Coordinators and company users can view any student's full profile including exp
 
 ### Create student experience
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/student/experiences` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `POST`                      |
+| **Path**   | `/student/experiences`      |
+| **Auth**   | Bearer token + student role |
 
 **Request body:**
+
 ```json
 {
-  "title": "Intern",
-  "company_name": "Acme Corp",
-  "start_date": "2024-01-01",
-  "end_date": "2024-06-30",
-  "description": "Worked on backend systems"
+    "title": "Intern",
+    "company_name": "Acme Corp",
+    "start_date": "2024-01-01",
+    "end_date": "2024-06-30",
+    "description": "Worked on backend systems"
 }
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| title | string | Yes | Max 255 |
-| company_name | string | Yes | Max 255 |
-| start_date | date | Yes | Format: YYYY-MM-DD |
-| end_date | date | No | Must be >= start_date |
-| description | string | No | |
+| Field        | Type   | Required | Notes                 |
+|--------------|--------|----------|-----------------------|
+| title        | string | Yes      | Max 255               |
+| company_name | string | Yes      | Max 255               |
+| start_date   | date   | Yes      | Format: YYYY-MM-DD    |
+| end_date     | date   | No       | Must be >= start_date |
+| description  | string | No       |                       |
 
 **Success (201):** `{ "message": "Experience created successfully.", "data": <experience>, "links": {...} }`
 
@@ -1141,37 +1346,38 @@ Coordinators and company users can view any student's full profile including exp
 
 ### Update student experience
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/student/experiences/{id}` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT` or `PATCH`            |
+| **Path**   | `/student/experiences/{id}` |
+| **Auth**   | Bearer token + student role |
 
 **Request body (all optional):**
+
 ```json
 {
-  "title": "Junior Developer",
-  "company_name": "Acme Corp",
-  "start_date": "2024-01-01",
-  "end_date": "2024-12-31",
-  "description": "Updated description..."
+    "title": "Junior Developer",
+    "company_name": "Acme Corp",
+    "start_date": "2024-01-01",
+    "end_date": "2024-12-31",
+    "description": "Updated description..."
 }
 ```
 
-**Success (200):** `{ "message": "Experience updated successfully.", "data": <experience>, "links": {...} }`  
+**Success (200):** `{ "message": "Experience updated successfully.", "data": <experience>, "links": {...} }`
 **Error (404):** Experience not found or not owned by you.
 
 ---
 
 ### Delete student experience
 
-| | |
-|---|---|
-| **Method** | `DELETE` |
-| **Path** | `/student/experiences/{id}` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `DELETE`                    |
+| **Path**   | `/student/experiences/{id}` |
+| **Auth**   | Bearer token + student role |
 
-**Success (200):** `{ "message": "Experience deleted successfully." }`  
+**Success (200):** `{ "message": "Experience deleted successfully." }`
 **Error (404):** Experience not found or not owned by you.
 
 [↑ Back to index](#index)
@@ -1182,25 +1388,34 @@ Coordinators and company users can view any student's full profile including exp
 
 ### List student languages
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/languages` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/student/languages`        |
+| **Auth**   | Bearer token + student role |
 
 **Success (200):**
+
 ```json
 {
-  "data": [
-    {
-      "language_id": 1,
-      "language_level_id": 3,
-      "is_active": true,
-      "language": { "id": 1, "name": "English" },
-      "language_level": { "id": 3, "name": "Fluent" }
+    "data": [
+        {
+            "language_id": 1,
+            "language_level_id": 3,
+            "is_active": true,
+            "language": {
+                "id": 1,
+                "name": "English"
+            },
+            "language_level": {
+                "id": 3,
+                "name": "Fluent"
+            }
+        }
+    ],
+    "links": {
+        "self": "..."
     }
-  ],
-  "links": { "self": "..." }
 }
 ```
 
@@ -1208,30 +1423,38 @@ Coordinators and company users can view any student's full profile including exp
 
 ### Sync student languages
 
-| | |
-|---|---|
-| **Method** | `PUT` |
-| **Path** | `/student/languages` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT`                       |
+| **Path**   | `/student/languages`        |
+| **Auth**   | Bearer token + student role |
 
 Replaces all languages for the student. Send the complete list of languages.
 
 **Request body:**
+
 ```json
 {
-  "languages": [
-    { "language_id": 1, "language_level_id": 3, "is_active": true },
-    { "language_id": 2, "language_level_id": 2 }
-  ]
+    "languages": [
+        {
+            "language_id": 1,
+            "language_level_id": 3,
+            "is_active": true
+        },
+        {
+            "language_id": 2,
+            "language_level_id": 2
+        }
+    ]
 }
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| languages | array | Yes | List of language entries |
-| languages.*.language_id | number | Yes | Must exist in `languages` table |
-| languages.*.language_level_id | number | Yes | Must exist in `language_levels` table |
-| languages.*.is_active | boolean | No | Defaults to true |
+| Field                         | Type    | Required | Notes                                 |
+|-------------------------------|---------|----------|---------------------------------------|
+| languages                     | array   | Yes      | List of language entries              |
+| languages.*.language_id       | number  | Yes      | Must exist in `languages` table       |
+| languages.*.language_level_id | number  | Yes      | Must exist in `language_levels` table |
+| languages.*.is_active         | boolean | No       | Defaults to true                      |
 
 **Success (200):** `{ "message": "Languages updated successfully.", "data": [...], "links": {...} }`
 
@@ -1243,24 +1466,31 @@ Replaces all languages for the student. Send the complete list of languages.
 
 ### List student tags
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/tags` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `GET`                       |
+| **Path**   | `/student/tags`             |
+| **Auth**   | Bearer token + student role |
 
 **Success (200):**
+
 ```json
 {
-  "data": [
-    {
-      "tag_id": 1,
-      "is_active": true,
-      "weight": 5,
-      "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+    "data": [
+        {
+            "tag_id": 1,
+            "is_active": true,
+            "weight": 5,
+            "tag": {
+                "id": 1,
+                "name": "PHP",
+                "tag_type": "skill"
+            }
+        }
+    ],
+    "links": {
+        "self": "..."
     }
-  ],
-  "links": { "self": "..." }
 }
 ```
 
@@ -1268,31 +1498,45 @@ Replaces all languages for the student. Send the complete list of languages.
 
 ### Sync student tags
 
-| | |
-|---|---|
-| **Method** | `PUT` |
-| **Path** | `/student/tags` |
-| **Auth** | Bearer token + student role |
+|            |                             |
+|------------|-----------------------------|
+| **Method** | `PUT`                       |
+| **Path**   | `/student/tags`             |
+| **Auth**   | Bearer token + student role |
 
-Replaces all tags/skills for the student. Send the complete list of tags. This is a **sync** operation—existing tags are removed and replaced with the new list provided.
+Replaces all tags/skills for the student. Send the complete list of tags. This is a **sync** operation—existing tags are
+removed and replaced with the new list provided.
 
 **Request body:**
+
 ```json
 {
-  "tags": [
-    { "tag_id": 1, "is_active": true, "weight": 95 },
-    { "tag_id": 2, "is_active": true, "weight": 85 },
-    { "tag_id": 13, "is_active": true, "weight": 70 }
-  ]
+    "tags": [
+        {
+            "tag_id": 1,
+            "is_active": true,
+            "weight": 95
+        },
+        {
+            "tag_id": 2,
+            "is_active": true,
+            "weight": 85
+        },
+        {
+            "tag_id": 13,
+            "is_active": true,
+            "weight": 70
+        }
+    ]
 }
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| tags | array | Yes | List of tag entries |
-| tags.*.tag_id | number | Yes | Must exist in `tags` table |
-| tags.*.is_active | boolean | No | Defaults to true |
-| tags.*.weight | number | No | 0–100, represents proficiency/priority |
+| Field            | Type    | Required | Notes                                  |
+|------------------|---------|----------|----------------------------------------|
+| tags             | array   | Yes      | List of tag entries                    |
+| tags.*.tag_id    | number  | Yes      | Must exist in `tags` table             |
+| tags.*.is_active | boolean | No       | Defaults to true                       |
+| tags.*.weight    | number  | No       | 0–100, represents proficiency/priority |
 
 #### Understanding the `weight` field
 
@@ -1300,56 +1544,87 @@ The `weight` field (0–100) represents the student's **proficiency level** for 
 
 | Weight Range | Proficiency Level |
 |--------------|-------------------|
-| 90–100 | Expert |
-| 70–89 | Advanced |
-| 50–69 | Intermediate |
-| 30–49 | Beginner |
-| 0–29 | Learning |
+| 90–100       | Expert            |
+| 70–89        | Advanced          |
+| 50–69        | Intermediate      |
+| 30–49        | Beginner          |
+| 0–29         | Learning          |
 
-This weight is used by the matching algorithm to better match students with vacancies. A higher weight indicates stronger proficiency.
+This weight is used by the matching algorithm to better match students with vacancies. A higher weight indicates
+stronger proficiency.
 
 **Example – Adding skills with proficiency levels:**
+
 ```json
 {
-  "tags": [
-    { "tag_id": 19, "is_active": true, "weight": 95 },
-    { "tag_id": 1, "is_active": true, "weight": 90 },
-    { "tag_id": 13, "is_active": true, "weight": 60 },
-    { "tag_id": 4, "is_active": true, "weight": 40 }
-  ]
+    "tags": [
+        {
+            "tag_id": 19,
+            "is_active": true,
+            "weight": 95
+        },
+        {
+            "tag_id": 1,
+            "is_active": true,
+            "weight": 90
+        },
+        {
+            "tag_id": 13,
+            "is_active": true,
+            "weight": 60
+        },
+        {
+            "tag_id": 4,
+            "is_active": true,
+            "weight": 40
+        }
+    ]
 }
 ```
-In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in tag 1 (e.g., PHP), intermediate in tag 13 (e.g., React), and a beginner in tag 4 (e.g., Python).
+
+In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in tag 1 (e.g., PHP), intermediate in tag
+13 (e.g., React), and a beginner in tag 4 (e.g., Python).
 
 **Success (200):**
+
 ```json
 {
-  "message": "Tags updated successfully.",
-  "data": [
-    {
-      "tag_id": 19,
-      "is_active": true,
-      "weight": 95,
-      "tag": { "id": 19, "name": "Laravel", "tag_type": "skill" }
-    },
-    {
-      "tag_id": 1,
-      "is_active": true,
-      "weight": 90,
-      "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+    "message": "Tags updated successfully.",
+    "data": [
+        {
+            "tag_id": 19,
+            "is_active": true,
+            "weight": 95,
+            "tag": {
+                "id": 19,
+                "name": "Laravel",
+                "tag_type": "skill"
+            }
+        },
+        {
+            "tag_id": 1,
+            "is_active": true,
+            "weight": 90,
+            "tag": {
+                "id": 1,
+                "name": "PHP",
+                "tag_type": "skill"
+            }
+        }
+    ],
+    "links": {
+        "self": "https://<your-api-host>/api/v1/student/tags"
     }
-  ],
-  "links": { "self": "https://<your-api-host>/api/v1/student/tags" }
 }
 ```
 
 **Error responses:**
 
-| Status | Reason |
-|--------|--------|
-| 401 | Not authenticated (missing or invalid JWT) |
-| 403 | User is not a student |
-| 422 | Validation error (invalid tag_id, weight out of range, etc.) |
+| Status | Reason                                                       |
+|--------|--------------------------------------------------------------|
+| 401    | Not authenticated (missing or invalid JWT)                   |
+| 403    | User is not a student                                        |
+| 422    | Validation error (invalid tag_id, weight out of range, etc.) |
 
 <details>
 <summary><strong>Postman example</strong></summary>
@@ -1358,7 +1633,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
    ```
    POST /api/v1/auth/login
    Content-Type: application/json
-   
+
    { "email": "student@example.com", "password": "password123" }
    ```
 
@@ -1368,7 +1643,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
    Authorization: Bearer <your-jwt-token>
    Content-Type: application/json
    Accept: application/json
-   
+
    {
      "tags": [
        { "tag_id": 1, "is_active": true, "weight": 90 },
@@ -1393,31 +1668,35 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
 
 ## Public data (no auth)
 
-These endpoints return only **active** (coordinator-approved) companies and their vacancies. Use them for student/public frontends. Companies that registered via [Register as company](#2-register-as-company-self-registration-team-a-only) do not appear here until a stage coordinator sets their `is_active` to `true`.
+These endpoints return only **active** (coordinator-approved) companies and their vacancies. Use them for student/public
+frontends. Companies that registered via [Register as company](#2-register-as-company-self-registration-team-a-only) do
+not appear here until a stage coordinator sets their `is_active` to `true`.
 
 ### List active companies
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/companies` |
-| **Auth** | None |
+|            |              |
+|------------|--------------|
+| **Method** | `GET`        |
+| **Path**   | `/companies` |
+| **Auth**   | None         |
 
-**Success (200):** `{ "data": [ <company objects> ], "links": { "self": "..." } }` — only companies with `is_active: true`.
+**Success (200):** `{ "data": [ <company objects> ], "links": { "self": "..." } }` — only companies with
+`is_active: true`.
 
 ---
 
 ### List vacancies (active companies only)
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/vacancies` |
-| **Auth** | None |
+|            |              |
+|------------|--------------|
+| **Method** | `GET`        |
+| **Path**   | `/vacancies` |
+| **Auth**   | None         |
 
 **Query parameters:** `per_page` (number, default 15) for pagination.
 
 **Success (200):**
+
 ```json
 {
     "data": [
@@ -1518,7 +1797,9 @@ These endpoints return only **active** (coordinator-approved) companies and thei
 }
 ```
 
-Note: The public `/vacancies` response includes the vacancy's `is_active` flag. Each `vacancy_requirements` item includes `created_at`/`updated_at` and the nested `tag` object contains `is_active` and timestamps — the example above reflects what Postman returns from the API for a vacancy with multiple skill requirements.
+Note: The public `/vacancies` response includes the vacancy's `is_active` flag. Each `vacancy_requirements` item
+includes `created_at`/`updated_at` and the nested `tag` object contains `is_active` and timestamps — the example above
+reflects what Postman returns from the API for a vacancy with multiple skill requirements.
 
 ---
 
@@ -1527,7 +1808,7 @@ Note: The public `/vacancies` response includes the vacancy's `is_active` flag. 
 All routes below require:
 
 1. **Valid JWT** in `Authorization: Bearer <token>`.
-2. **Logged-in user role = coordinator.**  
+2. **Logged-in user role = coordinator.**
    Otherwise you get **403** (e.g. “Forbidden. Coordinator role required.” or “This action is unauthorized.”).
 
 [↑ Back to index](#index)
@@ -1540,115 +1821,117 @@ Create and manage companies first; then add company users by `company_id`.
 
 ### List companies
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/coordinator/companies` |
+|            |                          |
+|------------|--------------------------|
+| **Method** | `GET`                    |
+| **Path**   | `/coordinator/companies` |
 
 **Query parameters:**
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| name | string | — | Filter by company name (partial match) |
-| industry_tag_id | number | — | Filter by tag id |
-| is_active | boolean | — | Filter by active status (`true`/`false`) |
-| per_page | number | 15 | Pagination size |
+| Param           | Type    | Default | Description                              |
+|-----------------|---------|---------|------------------------------------------|
+| name            | string  | —       | Filter by company name (partial match)   |
+| industry_tag_id | number  | —       | Filter by tag id                         |
+| is_active       | boolean | —       | Filter by active status (`true`/`false`) |
+| per_page        | number  | 15      | Pagination size                          |
 
 **Example:** `GET /coordinator/companies?name=Acme&is_active=true&per_page=10`
 
 **Success (200):**
+
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "name": "Acme Corp",
-      "industry_tag_id": null,
-      "email": "info@acme.com",
-      "phone": null,
-      "size_category": null,
-      "photo_url": null,
-      "banner_url": null,
-      "description": null,
-      "is_active": true,
-      "created_at": "...",
-      "updated_at": "..."
+    "data": [
+        {
+            "id": 1,
+            "name": "Acme Corp",
+            "industry_tag_id": null,
+            "email": "info@acme.com",
+            "phone": null,
+            "size_category": null,
+            "photo_url": null,
+            "banner_url": null,
+            "description": null,
+            "is_active": true,
+            "created_at": "...",
+            "updated_at": "..."
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "last_page": 1,
+        "per_page": 15,
+        "total": 1
+    },
+    "links": {
+        "self": "..."
     }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 1
-  },
-  "links": { "self": "..." }
 }
 ```
-
 
 ---
 
 ### Create company
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/coordinator/companies` |
+|            |                          |
+|------------|--------------------------|
+| **Method** | `POST`                   |
+| **Path**   | `/coordinator/companies` |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
-  "name": "Acme Corp",
-  "industry_tag_id": null,
-  "email": "info@acme.com",
-  "phone": "+31201234567",
-  "size_category": null,
-  "photo_url": null,
-  "banner_url": null,
-  "description": null,
-  "is_active": true
+    "name": "Acme Corp",
+    "industry_tag_id": null,
+    "email": "info@acme.com",
+    "phone": "+31201234567",
+    "size_category": null,
+    "photo_url": null,
+    "banner_url": null,
+    "description": null,
+    "is_active": true
 }
 ```
 
 </details>
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| name | string | Yes | Max 255 |
-| industry_tag_id | number | No | Must exist in `tags` |
-| email | string | No | Email, max 255 |
-| phone | string | No | Max 50 |
-| size_category | string | No | Max 50 |
-| photo_url | string | No | |
-| banner_url | string | No | Max 512 |
-| description | string | No | |
-| is_active | boolean | No | Defaults to `true` |
+| Field           | Type    | Required | Notes                |
+|-----------------|---------|----------|----------------------|
+| name            | string  | Yes      | Max 255              |
+| industry_tag_id | number  | No       | Must exist in `tags` |
+| email           | string  | No       | Email, max 255       |
+| phone           | string  | No       | Max 50               |
+| size_category   | string  | No       | Max 50               |
+| photo_url       | string  | No       |                      |
+| banner_url      | string  | No       | Max 512              |
+| description     | string  | No       |                      |
+| is_active       | boolean | No       | Defaults to `true`   |
 
-**Success (201):** `{ "data": <company object> }`  
+**Success (201):** `{ "data": <company object> }`
 Use `data.id` as `company_id` when creating a company user.
 
 ---
 
 ### Get company
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/coordinator/companies/{id}` |
+|            |                               |
+|------------|-------------------------------|
+| **Method** | `GET`                         |
+| **Path**   | `/coordinator/companies/{id}` |
 
-**Success (200):** `{ "data": <company>, "links": {...} }`  
+**Success (200):** `{ "data": <company>, "links": {...} }`
 **Error (404):** if company does not exist.
 
 ---
 
 ### Update company
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/coordinator/companies/{id}` |
+|            |                               |
+|------------|-------------------------------|
+| **Method** | `PUT` or `PATCH`              |
+| **Path**   | `/coordinator/companies/{id}` |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
@@ -1657,15 +1940,18 @@ Same fields as [Create company](#create-company); all optional. Only send fields
 
 ```json
 {
-  "is_active": true,
-  "name": "Acme Corp",
-  "email": "info@acme.com"
+    "is_active": true,
+    "name": "Acme Corp",
+    "email": "info@acme.com"
 }
 ```
 
 </details>
 
-**Approving self-registered companies:** Set `is_active` to `true` to approve a company. Until then, that company and its users/vacancies are excluded from [List active companies](#list-active-companies) and [List vacancies](#list-vacancies-active-companies-only), and only their users when using `GET /coordinator/users?active_companies_only=1`.
+**Approving self-registered companies:** Set `is_active` to `true` to approve a company. Until then, that company and
+its users/vacancies are excluded from [List active companies](#list-active-companies)
+and [List vacancies](#list-vacancies-active-companies-only), and only their users when using
+`GET /coordinator/users?active_companies_only=1`.
 
 **Success (200):** `{ "data": <updated company> }`
 
@@ -1673,10 +1959,10 @@ Same fields as [Create company](#create-company); all optional. Only send fields
 
 ### Delete company
 
-| | |
-|---|---|
-| **Method** | `DELETE` |
-| **Path** | `/coordinator/companies/{id}` |
+|            |                               |
+|------------|-------------------------------|
+| **Method** | `DELETE`                      |
+| **Path**   | `/coordinator/companies/{id}` |
 
 **Success (204):** No content.
 
@@ -1686,27 +1972,28 @@ Same fields as [Create company](#create-company); all optional. Only send fields
 
 ## Users (coordinator)
 
-Manage **student** and **company** users. For company users, the company must exist (create it first via `/coordinator/companies`).
+Manage **student** and **company** users. For company users, the company must exist (create it first via
+`/coordinator/companies`).
 
 ### List users
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/coordinator/users` |
+|            |                      |
+|------------|----------------------|
+| **Method** | `GET`                |
+| **Path**   | `/coordinator/users` |
 
 **Query parameters:**
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| role | string | — | `student` or `company` to filter (e.g. students only: `role=student`) |
-| search | string | — | Search in first name, last name, or email (partial match) |
-| per_page | number | 15 | Pagination size |
-| active_companies_only | boolean | false | If `1` or `true`, only return students and company users whose company is active (useful when listing users for display). Omit to see all users for management. |
-| assigned_to_me | boolean | false | If `1` or `true` **and** `role=student`, only return students currently assigned to the logged-in coordinator. |
+| Param                 | Type    | Default | Description                                                                                                                                                     |
+|-----------------------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| role                  | string  | —       | `student` or `company` to filter (e.g. students only: `role=student`)                                                                                           |
+| search                | string  | —       | Search in first name, last name, or email (partial match)                                                                                                       |
+| per_page              | number  | 15      | Pagination size                                                                                                                                                 |
+| active_companies_only | boolean | false   | If `1` or `true`, only return students and company users whose company is active (useful when listing users for display). Omit to see all users for management. |
+| assigned_to_me        | boolean | false   | If `1` or `true` **and** `role=student`, only return students currently assigned to the logged-in coordinator.                                                  |
 
 **Example:** `GET /coordinator/users?role=student&search=jan&per_page=10`
-**Example:** `GET /coordinator/users?role=student&per_page=10`  
+**Example:** `GET /coordinator/users?role=student&per_page=10`
 **Example (only active companies’ users):** `GET /coordinator/users?active_companies_only=1`
 
 <details>
@@ -1714,39 +2001,47 @@ Manage **student** and **company** users. For company users, the company must ex
 
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "role": "student",
-      "email": "student@example.com",
-      "first_name": "Test",
-      "middle_name": null,
-      "last_name": "Student",
-      "phone": null,
-      "created_at": "2025-03-09T12:00:00.000000Z",
-      "updated_at": "2025-03-09T12:00:00.000000Z",
-      "student_profile": { "user_id": 1 }
-    },
-    {
-      "id": 2,
-      "role": "company",
-      "email": "hr@acme.com",
-      "first_name": "Jane",
-      "middle_name": null,
-      "last_name": "Doe",
-      "phone": null,
-      "created_at": "...",
-      "updated_at": "...",
-      "company_user": { "company_id": 1, "job_title": "HR Manager" },
-      "company": { "id": 1, "name": "Acme Corp" }
+    "data": [
+        {
+            "id": 1,
+            "role": "student",
+            "email": "student@example.com",
+            "first_name": "Test",
+            "middle_name": null,
+            "last_name": "Student",
+            "phone": null,
+            "created_at": "2025-03-09T12:00:00.000000Z",
+            "updated_at": "2025-03-09T12:00:00.000000Z",
+            "student_profile": {
+                "user_id": 1
+            }
+        },
+        {
+            "id": 2,
+            "role": "company",
+            "email": "hr@acme.com",
+            "first_name": "Jane",
+            "middle_name": null,
+            "last_name": "Doe",
+            "phone": null,
+            "created_at": "...",
+            "updated_at": "...",
+            "company_user": {
+                "company_id": 1,
+                "job_title": "HR Manager"
+            },
+            "company": {
+                "id": 1,
+                "name": "Acme Corp"
+            }
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "last_page": 1,
+        "per_page": 15,
+        "total": 2
     }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 2
-  }
 }
 ```
 
@@ -1756,23 +2051,23 @@ Manage **student** and **company** users. For company users, the company must ex
 
 ### Create user (student or company)
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/coordinator/users` |
+|            |                      |
+|------------|----------------------|
+| **Method** | `POST`               |
+| **Path**   | `/coordinator/users` |
 
 <details>
 <summary><strong>Request body – Student (JSON)</strong></summary>
 
 ```json
 {
-  "role": "student",
-  "email": "student@example.com",
-  "password": "secret123",
-  "first_name": "Test",
-  "middle_name": null,
-  "last_name": "Student",
-  "phone": null
+    "role": "student",
+    "email": "student@example.com",
+    "password": "secret123",
+    "first_name": "Test",
+    "middle_name": null,
+    "last_name": "Student",
+    "phone": null
 }
 ```
 
@@ -1783,39 +2078,46 @@ Manage **student** and **company** users. For company users, the company must ex
 
 ```json
 {
-  "role": "company",
-  "email": "hr@acme.com",
-  "password": "secret123",
-  "first_name": "Jane",
-  "middle_name": null,
-  "last_name": "Doe",
-  "phone": null,
-  "company_id": 1,
-  "job_title": "HR Manager"
+    "role": "company",
+    "email": "hr@acme.com",
+    "password": "secret123",
+    "first_name": "Jane",
+    "middle_name": null,
+    "last_name": "Doe",
+    "phone": null,
+    "company_id": 1,
+    "job_title": "HR Manager"
 }
 ```
 
 </details>
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| role | string | Yes | `"student"` or `"company"` |
-| email | string | Yes | Unique, max 255 |
-| password | string | Yes | Min 6 |
-| first_name | string | Yes | Max 100 |
-| middle_name | string | No | Max 100 |
-| last_name | string | Yes | Max 100 |
-| phone | string | No | Max 50 |
-| company_id | number | Yes if role=company | Must exist in `companies` |
-| job_title | string | No | Max 255, for company only |
+| Field       | Type   | Required            | Notes                      |
+|-------------|--------|---------------------|----------------------------|
+| role        | string | Yes                 | `"student"` or `"company"` |
+| email       | string | Yes                 | Unique, max 255            |
+| password    | string | Yes                 | Min 6                      |
+| first_name  | string | Yes                 | Max 100                    |
+| middle_name | string | No                  | Max 100                    |
+| last_name   | string | Yes                 | Max 100                    |
+| phone       | string | No                  | Max 50                     |
+| company_id  | number | Yes if role=company | Must exist in `companies`  |
+| job_title   | string | No                  | Max 255, for company only  |
 
 <details>
 <summary><strong>Success (201) – Response body (JSON)</strong></summary>
 
 ```json
 {
-  "message": "User created successfully.",
-  "data": { <user object, same shape as list/show> }
+    "message": "User created successfully.",
+    "data": {
+        <user
+        object,
+        same
+        shape
+        as
+        list/show>
+    }
 }
 ```
 
@@ -1827,107 +2129,137 @@ Manage **student** and **company** users. For company users, the company must ex
 
 ### Get user
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/coordinator/users/{id}` |
+|            |                           |
+|------------|---------------------------|
+| **Method** | `GET`                     |
+| **Path**   | `/coordinator/users/{id}` |
 
-Returns user details. For **students**, includes all related profile data (profile, experiences, tags, languages, preferences, favorite companies, saved vacancies).
+Returns user details. For **students**, includes all related profile data (profile, experiences, tags, languages,
+preferences, favorite companies, saved vacancies).
 
 **Success (200) – Student:**
+
 ```json
 {
-  "data": {
-    "id": 1,
-    "role": "student",
-    "email": "student@example.com",
-    "first_name": "Test",
-    "middle_name": null,
-    "last_name": "Student",
-    "phone": null,
-    "created_at": "2025-03-09T12:00:00+00:00",
-    "updated_at": "2025-03-09T12:00:00+00:00",
-    "student_profile": {
-      "user_id": 1,
-      "headline": "Junior Developer",
-      "bio": "Passionate about coding...",
-      "address_line": "Main Street 1",
-      "postal_code": "1234AB",
-      "city": "Amsterdam",
-      "country": "Netherlands",
-      "searching_status": "active",
-      "exclude_demographics": false,
-      "exclude_location": false
-    },
-    "student_experiences": [
-      {
+    "data": {
         "id": 1,
-        "title": "Intern",
-        "company_name": "Acme Corp",
-        "start_date": "2024-01-01",
-        "end_date": "2024-06-30",
-        "description": "Worked on backend systems"
-      }
-    ],
-    "student_tags": [
-      {
-        "tag_id": 1,
-        "is_active": true,
-        "weight": 5,
-        "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
-      }
-    ],
-    "student_languages": [
-      {
-        "language_id": 1,
-        "language_level_id": 3,
-        "is_active": true,
-        "language": { "id": 1, "name": "English" },
-        "language_level": { "id": 3, "name": "Fluent" }
-      }
-    ],
-    "student_preferences": {
-      "desired_role_tag_id": 2,
-      "hours_per_week_min": 32,
-      "hours_per_week_max": 40,
-      "max_distance_km": 50,
-      "has_drivers_license": true,
-      "notes": "Prefer remote work",
-      "desired_role_tag": { "id": 2, "name": "Backend Developer", "tag_type": "role" }
-    },
-    "student_favorite_companies": [
-      {
-        "company_id": 1,
-        "company": { "id": 1, "name": "Acme Corp" }
-      }
-    ],
-    "student_saved_vacancies": [
-      {
-        "vacancy_id": 1,
-        "removed_at": null,
-        "vacancy": { "id": 1, "title": "Backend Developer", "company_id": 1 }
-      }
-    ]
-  }
+        "role": "student",
+        "email": "student@example.com",
+        "first_name": "Test",
+        "middle_name": null,
+        "last_name": "Student",
+        "phone": null,
+        "created_at": "2025-03-09T12:00:00+00:00",
+        "updated_at": "2025-03-09T12:00:00+00:00",
+        "student_profile": {
+            "user_id": 1,
+            "headline": "Junior Developer",
+            "bio": "Passionate about coding...",
+            "address_line": "Main Street 1",
+            "postal_code": "1234AB",
+            "city": "Amsterdam",
+            "country": "Netherlands",
+            "searching_status": "active",
+            "exclude_demographics": false,
+            "exclude_location": false
+        },
+        "student_experiences": [
+            {
+                "id": 1,
+                "title": "Intern",
+                "company_name": "Acme Corp",
+                "start_date": "2024-01-01",
+                "end_date": "2024-06-30",
+                "description": "Worked on backend systems"
+            }
+        ],
+        "student_tags": [
+            {
+                "tag_id": 1,
+                "is_active": true,
+                "weight": 5,
+                "tag": {
+                    "id": 1,
+                    "name": "PHP",
+                    "tag_type": "skill"
+                }
+            }
+        ],
+        "student_languages": [
+            {
+                "language_id": 1,
+                "language_level_id": 3,
+                "is_active": true,
+                "language": {
+                    "id": 1,
+                    "name": "English"
+                },
+                "language_level": {
+                    "id": 3,
+                    "name": "Fluent"
+                }
+            }
+        ],
+        "student_preferences": {
+            "desired_role_tag_id": 2,
+            "hours_per_week_min": 32,
+            "hours_per_week_max": 40,
+            "max_distance_km": 50,
+            "has_drivers_license": true,
+            "notes": "Prefer remote work",
+            "desired_role_tag": {
+                "id": 2,
+                "name": "Backend Developer",
+                "tag_type": "role"
+            }
+        },
+        "student_favorite_companies": [
+            {
+                "company_id": 1,
+                "company": {
+                    "id": 1,
+                    "name": "Acme Corp"
+                }
+            }
+        ],
+        "student_saved_vacancies": [
+            {
+                "vacancy_id": 1,
+                "removed_at": null,
+                "vacancy": {
+                    "id": 1,
+                    "title": "Backend Developer",
+                    "company_id": 1
+                }
+            }
+        ]
+    }
 }
 ```
 
 **Success (200) – Company user:**
+
 ```json
 {
-  "data": {
-    "id": 2,
-    "role": "company",
-    "email": "hr@acme.com",
-    "first_name": "Jane",
-    "middle_name": null,
-    "last_name": "Doe",
-    "phone": null,
-    "created_at": "2025-03-09T12:00:00+00:00",
-    "updated_at": "2025-03-09T12:00:00+00:00",
-    "company_user": { "company_id": 1, "job_title": "HR Manager" },
-    "company": { "id": 1, "name": "Acme Corp" }
-  }
+    "data": {
+        "id": 2,
+        "role": "company",
+        "email": "hr@acme.com",
+        "first_name": "Jane",
+        "middle_name": null,
+        "last_name": "Doe",
+        "phone": null,
+        "created_at": "2025-03-09T12:00:00+00:00",
+        "updated_at": "2025-03-09T12:00:00+00:00",
+        "company_user": {
+            "company_id": 1,
+            "job_title": "HR Manager"
+        },
+        "company": {
+            "id": 1,
+            "name": "Acme Corp"
+        }
+    }
 }
 ```
 
@@ -1937,10 +2269,10 @@ Returns user details. For **students**, includes all related profile data (profi
 
 ### Update user
 
-| | |
-|---|---|
-| **Method** | `PUT` or `PATCH` |
-| **Path** | `/coordinator/users/{id}` |
+|            |                           |
+|------------|---------------------------|
+| **Method** | `PUT` or `PATCH`          |
+| **Path**   | `/coordinator/users/{id}` |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
@@ -1949,15 +2281,15 @@ Only include fields to update.
 
 ```json
 {
-  "email": "new@example.com",
-  "first_name": "Updated",
-  "last_name": "Name",
-  "password": "newpassword",
-  "phone": "+31612345678"
+    "email": "new@example.com",
+    "first_name": "Updated",
+    "last_name": "Name",
+    "password": "newpassword",
+    "phone": "+31612345678"
 }
 ```
 
-For **company** users you can also send `company_id` and `job_title`.  
+For **company** users you can also send `company_id` and `job_title`.
 Omit `password` or send `null` to leave it unchanged.
 
 </details>
@@ -1968,13 +2300,15 @@ Omit `password` or send `null` to leave it unchanged.
 
 ### Delete user
 
-| | |
-|---|---|
-| **Method** | `DELETE` |
-| **Path** | `/coordinator/users/{id}` |
+|            |                           |
+|------------|---------------------------|
+| **Method** | `DELETE`                  |
+| **Path**   | `/coordinator/users/{id}` |
 
-Only **students** can be deleted. Attempting to delete a coordinator or company user returns **403**.  
-Deleting a student also **cascades** to their related data (profile, experiences, tags, languages, preferences, favorites, saved vacancies, messages, conversations, and other student-specific records), either removing those rows or nulling references where configured.
+Only **students** can be deleted. Attempting to delete a coordinator or company user returns **403**.
+Deleting a student also **cascades** to their related data (profile, experiences, tags, languages, preferences,
+favorites, saved vacancies, messages, conversations, and other student-specific records), either removing those rows or
+nulling references where configured.
 
 **Success (200):** `{ "message": "User deleted successfully." }`
 **Error (403):** `{ "message": "Alleen studenten kunnen verwijderd worden" }`
@@ -1986,59 +2320,62 @@ Deleting a student also **cascades** to their related data (profile, experiences
 
 ## Student–coordinator assignments (coordinator)
 
-Coordinators can manage which students are assigned to which coordinators.  
-Assignments are stored in the `student_coordinator_assignments` table and are **historical**: when a student is unassigned, the row is kept but `unassigned_at` is set.  
-The `GET /coordinator/users?role=student&assigned_to_me=1` filter only considers **active** assignments (`unassigned_at` is `null`).
+Coordinators can manage which students are assigned to which coordinators.
+Assignments are stored in the `student_coordinator_assignments` table and are **historical**: when a student is
+unassigned, the row is kept but `unassigned_at` is set.
+The `GET /coordinator/users?role=student&assigned_to_me=1` filter only considers **active** assignments (`unassigned_at`
+is `null`).
 
 ### Assign student to a coordinator
 
-Create a new assignment between a student and a coordinator. You can assign to **yourself** or to **another coordinator**.
+Create a new assignment between a student and a coordinator. You can assign to **yourself** or to **another coordinator
+**.
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/coordinator/users/{student_id}/assignments` |
-| **Auth** | Bearer token + coordinator role |
+|            |                                               |
+|------------|-----------------------------------------------|
+| **Method** | `POST`                                        |
+| **Path**   | `/coordinator/users/{student_id}/assignments` |
+| **Auth**   | Bearer token + coordinator role               |
 
 **Request body (JSON):**
 
 ```json
 {
-  "coordinator_user_id": 5,
-  "note": "Moving this student to another coordinator."
+    "coordinator_user_id": 5,
+    "note": "Moving this student to another coordinator."
 }
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| coordinator_user_id | number | Yes | Must exist in `users` and have role `coordinator`. |
-| note | string | No | Optional internal note stored on the assignment. |
+| Field               | Type   | Required | Notes                                              |
+|---------------------|--------|----------|----------------------------------------------------|
+| coordinator_user_id | number | Yes      | Must exist in `users` and have role `coordinator`. |
+| note                | string | No       | Optional internal note stored on the assignment.   |
 
 **Behavior:**
 
 - Fails with `422` if the path user is **not** a student.
 - Fails with `422` if `coordinator_user_id` is not a coordinator.
 - Creates a new `student_coordinator_assignments` row with:
-  - `student_user_id = {student_id}`
-  - `coordinator_user_id = coordinator_user_id`
-  - `assigned_by_user_id = <logged-in coordinator id>`
-  - `assigned_at = now`
-  - `unassigned_at = null`
+    - `student_user_id = {student_id}`
+    - `coordinator_user_id = coordinator_user_id`
+    - `assigned_by_user_id = <logged-in coordinator id>`
+    - `assigned_at = now`
+    - `unassigned_at = null`
 
 **Success (201):**
 
 ```json
 {
-  "message": "Coordinator assigned to student successfully.",
-  "data": {
-    "id": 1,
-    "student_user_id": 10,
-    "coordinator_user_id": 5,
-    "assigned_by_user_id": 3,
-    "assigned_at": "2025-03-10T12:00:00+00:00",
-    "unassigned_at": null,
-    "note": "Moving this student to another coordinator."
-  }
+    "message": "Coordinator assigned to student successfully.",
+    "data": {
+        "id": 1,
+        "student_user_id": 10,
+        "coordinator_user_id": 5,
+        "assigned_by_user_id": 3,
+        "assigned_at": "2025-03-10T12:00:00+00:00",
+        "unassigned_at": null,
+        "note": "Moving this student to another coordinator."
+    }
 }
 ```
 
@@ -2048,51 +2385,51 @@ Create a new assignment between a student and a coordinator. You can assign to *
 
 Marks the latest active assignment between a student and a coordinator as **unassigned** by setting `unassigned_at`.
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/coordinator/users/{student_id}/unassignments` |
-| **Auth** | Bearer token + coordinator role |
+|            |                                                 |
+|------------|-------------------------------------------------|
+| **Method** | `POST`                                          |
+| **Path**   | `/coordinator/users/{student_id}/unassignments` |
+| **Auth**   | Bearer token + coordinator role                 |
 
 **Request body (JSON):**
 
 ```json
 {
-  "coordinator_user_id": 5,
-  "note": "Student graduated."
+    "coordinator_user_id": 5,
+    "note": "Student graduated."
 }
 ```
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| coordinator_user_id | number | No | If omitted, defaults to the logged-in coordinator’s user id. Must exist in `users` if provided. |
-| note | string | No | Optional note to update on the assignment. |
+| Field               | Type   | Required | Notes                                                                                           |
+|---------------------|--------|----------|-------------------------------------------------------------------------------------------------|
+| coordinator_user_id | number | No       | If omitted, defaults to the logged-in coordinator’s user id. Must exist in `users` if provided. |
+| note                | string | No       | Optional note to update on the assignment.                                                      |
 
 **Behavior:**
 
 - Fails with `422` if the path user is **not** a student.
 - Looks up the most recent assignment for:
-  - `student_user_id = {student_id}`
-  - `coordinator_user_id = coordinator_user_id` (or current coordinator if omitted)
-  - `unassigned_at IS NULL`
+    - `student_user_id = {student_id}`
+    - `coordinator_user_id = coordinator_user_id` (or current coordinator if omitted)
+    - `unassigned_at IS NULL`
 - If no active assignment is found, returns **404**:
-  - `{ "message": "Active assignment not found." }`
+    - `{ "message": "Active assignment not found." }`
 - Otherwise sets `unassigned_at = now` and, if provided, updates `note`.
 
 **Success (200):**
 
 ```json
 {
-  "message": "Student unassigned from coordinator successfully.",
-  "data": {
-    "id": 1,
-    "student_user_id": 10,
-    "coordinator_user_id": 5,
-    "assigned_by_user_id": 3,
-    "assigned_at": "2025-03-10T12:00:00+00:00",
-    "unassigned_at": "2025-03-11T09:00:00+00:00",
-    "note": "Student graduated."
-  }
+    "message": "Student unassigned from coordinator successfully.",
+    "data": {
+        "id": 1,
+        "student_user_id": 10,
+        "coordinator_user_id": 5,
+        "assigned_by_user_id": 3,
+        "assigned_at": "2025-03-10T12:00:00+00:00",
+        "unassigned_at": "2025-03-11T09:00:00+00:00",
+        "note": "Student graduated."
+    }
 }
 ```
 
@@ -2106,60 +2443,71 @@ Coordinators can list all vacancies across companies with optional filtering.
 
 ### List vacancies (coordinator)
 
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/coordinator/vacancies` |
-| **Auth** | Bearer token + coordinator role |
+|            |                                 |
+|------------|---------------------------------|
+| **Method** | `GET`                           |
+| **Path**   | `/coordinator/vacancies`        |
+| **Auth**   | Bearer token + coordinator role |
 
 **Query parameters:**
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| company_id | number | — | Filter by company id |
-| status | string | — | Filter by vacancy status |
-| tag_id | number | — | Filter vacancies that have this tag in their requirements |
-| search | string | — | Search in vacancy title (partial match) |
-| per_page | number | 15 | Pagination size |
+| Param      | Type   | Default | Description                                               |
+|------------|--------|---------|-----------------------------------------------------------|
+| company_id | number | —       | Filter by company id                                      |
+| status     | string | —       | Filter by vacancy status                                  |
+| tag_id     | number | —       | Filter vacancies that have this tag in their requirements |
+| search     | string | —       | Search in vacancy title (partial match)                   |
+| per_page   | number | 15      | Pagination size                                           |
 
 **Example:** `GET /coordinator/vacancies?company_id=1&status=open&per_page=10`
 
 **Success (200):**
+
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "company_id": 1,
-      "location_id": null,
-      "title": "Backend developer",
-      "hours_per_week": 40,
-      "description": "...",
-      "offer_text": null,
-      "expectations_text": null,
-      "status": "open",
-      "created_at": "...",
-      "updated_at": "...",
-      "company": { "id": 1, "name": "Acme Corp", ... },
-      "location": null,
-      "vacancy_requirements": [
+    "data": [
         {
-          "vacancy_id": 1,
-          "tag_id": 1,
-          "requirement_type": "skill",
-          "importance": null,
-          "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+            "id": 1,
+            "company_id": 1,
+            "location_id": null,
+            "title": "Backend developer",
+            "hours_per_week": 40,
+            "description": "...",
+            "offer_text": null,
+            "expectations_text": null,
+            "status": "open",
+            "created_at": "...",
+            "updated_at": "...",
+            "company": {
+                "id": 1,
+                "name": "Acme Corp",
+                ...
+            },
+            "location": null,
+            "vacancy_requirements": [
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 1,
+                    "requirement_type": "skill",
+                    "importance": null,
+                    "tag": {
+                        "id": 1,
+                        "name": "PHP",
+                        "tag_type": "skill"
+                    }
+                }
+            ]
         }
-      ]
+    ],
+    "meta": {
+        "current_page": 1,
+        "last_page": 1,
+        "per_page": 15,
+        "total": 1
+    },
+    "links": {
+        "self": "..."
     }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 1
-  },
-  "links": { "self": "..." }
 }
 ```
 
@@ -2177,7 +2525,10 @@ Coordinators can list all vacancies across companies with optional filtering.
 
 Use the same Bearer token for all requests in steps 3–5.
 
-**Approving self-registered companies:** Companies that registered via `POST /auth/register/company` start with `is_active: false`. To approve, use `PATCH /coordinator/companies/{id}` with `{ "is_active": true }`. Only active companies appear in `GET /companies` and `GET /vacancies`, and only their users when using `GET /coordinator/users?active_companies_only=1`.
+**Approving self-registered companies:** Companies that registered via `POST /auth/register/company` start with
+`is_active: false`. To approve, use `PATCH /coordinator/companies/{id}` with `{ "is_active": true }`. Only active
+companies appear in `GET /companies` and `GET /vacancies`, and only their users when using
+`GET /coordinator/users?active_companies_only=1`.
 
 [↑ Back to index](#index)
 
@@ -2185,68 +2536,89 @@ Use the same Bearer token for all requests in steps 3–5.
 
 ## Testing with Postman
 
-Use **Base URL** `http://localhost/api/v1` (or `http://127.0.0.1:8000/api/v1` if using `php artisan serve`). Set header **Content-Type:** `application/json` on all requests.
+Use **Base URL** `http://localhost/api/v1` (or `http://127.0.0.1:8000/api/v1` if using `php artisan serve`). Set header*
+*Content-Type:** `application/json` on all requests.
 php -S 127.0.0.1:8001 -t public
 
 ### 1. Get a company user token
 
 You need a JWT for a user with role **company** and a linked company.
 
-**Option A – Existing company user**  
+**Option A – Existing company user**
 `POST /auth/login` with body:
+
 ```json
-{ "email": "company-user@example.com", "password": "yourpassword" }
+{
+    "email": "company-user@example.com",
+    "password": "yourpassword"
+}
 ```
+
 Copy `token` from the response.
 
-**Option B – Create via coordinator**  
-1. `POST /auth/register/coordinator` → register coordinator.  
-2. `POST /auth/login` → login as coordinator, copy `token`.  
-3. `POST /coordinator/companies` with **Authorization: Bearer &lt;token&gt;** → create company, note `data.id`.  
-4. `POST /coordinator/users` with **Authorization: Bearer &lt;token&gt;** and body: `role: "company"`, `company_id` (id from step 3), email, password, first_name, last_name.  
+**Option B – Create via coordinator**
+
+1. `POST /auth/register/coordinator` → register coordinator.
+2. `POST /auth/login` → login as coordinator, copy `token`.
+3. `POST /coordinator/companies` with **Authorization: Bearer &lt;token&gt;** → create company, note `data.id`.
+4. `POST /coordinator/users` with **Authorization: Bearer &lt;token&gt;** and body: `role: "company"`, `company_id` (id
+   from step 3), email, password, first_name, last_name.
 5. `POST /auth/login` with that company user’s email/password → copy `token`.
 
 ### 2. Test tags and vacancies
 
 Use **Authorization: Bearer** with the company user token for all requests below.
 
-| Step | Method | Path | Notes |
-|------|--------|------|--------|
-| Get my company | GET | `/company` | Your company details |
-| Update my company | PATCH | `/company` | Optional: name, email, phone, etc. |
-| Get my profile | GET | `/company/profile` | User + company_user + company |
-| Update my profile | PATCH | `/company/profile` | Optional: first_name, last_name, job_title, etc. |
-| List tags | GET | `/tags` | Optional: `?tag_type=skill` |
-| List vacancies | GET | `/company/vacancies` | Empty at first |
-| Create vacancy | POST | `/company/vacancies` | See [Create vacancy](#create-vacancy) for body |
-| Get vacancy | GET | `/company/vacancies/{id}` | Use `id` from create response |
-| Update vacancy | PATCH | `/company/vacancies/{id}` | Optional fields + optional `tags` to replace |
-| Delete vacancy | DELETE | `/company/vacancies/{id}` | Returns 204 |
-| List vacancies again | GET | `/company/vacancies` | Should show created/updated vacancy or fewer after delete |
+| Step                 | Method | Path                      | Notes                                                     |
+|----------------------|--------|---------------------------|-----------------------------------------------------------|
+| Get my company       | GET    | `/company`                | Your company details                                      |
+| Update my company    | PATCH  | `/company`                | Optional: name, email, phone, etc.                        |
+| Get my profile       | GET    | `/company/profile`        | User + company_user + company                             |
+| Update my profile    | PATCH  | `/company/profile`        | Optional: first_name, last_name, job_title, etc.          |
+| List tags            | GET    | `/tags`                   | Optional: `?tag_type=skill`                               |
+| List vacancies       | GET    | `/company/vacancies`      | Empty at first                                            |
+| Create vacancy       | POST   | `/company/vacancies`      | See [Create vacancy](#create-vacancy) for body            |
+| Get vacancy          | GET    | `/company/vacancies/{id}` | Use `id` from create response                             |
+| Update vacancy       | PATCH  | `/company/vacancies/{id}` | Optional fields + optional `tags` to replace              |
+| Delete vacancy       | DELETE | `/company/vacancies/{id}` | Returns 204                                               |
+| List vacancies again | GET    | `/company/vacancies`      | Should show created/updated vacancy or fewer after delete |
 
 **Example create vacancy body** (existing tag by id):
+
 ```json
 {
-  "title": "Backend developer",
-  "hours_per_week": 40,
-  "description": "We are looking for...",
-  "status": "open",
-  "tags": [ { "id": 1 } ]
+    "title": "Backend developer",
+    "hours_per_week": 40,
+    "description": "We are looking for...",
+    "status": "open",
+    "tags": [
+        {
+            "id": 1
+        }
+    ]
 }
 ```
 
 **Example with new tags** (creates tags if they don’t exist):
+
 ```json
 {
-  "title": "Frontend developer",
-  "tags": [
-    { "name": "JavaScript", "tag_type": "skill" },
-    { "name": "React", "tag_type": "skill" }
-  ]
+    "title": "Frontend developer",
+    "tags": [
+        {
+            "name": "JavaScript",
+            "tag_type": "skill"
+        },
+        {
+            "name": "React",
+            "tag_type": "skill"
+        }
+    ]
 }
 ```
 
-**Common issues:** 403 = not a company user or no company linked. 422 = validation (e.g. missing `title`, or tag without `id` or without both `name` and `tag_type`).
+**Common issues:** 403 = not a company user or no company linked. 422 = validation (e.g. missing `title`, or tag without
+`id` or without both `name` and `tag_type`).
 
 [↑ Back to index](#index)
 
@@ -2254,14 +2626,15 @@ Use **Authorization: Bearer** with the company user token for all requests below
 
 ## HTTP status codes
 
-| Code | Meaning |
-|------|---------|
-| 200 | OK |
-| 201 | Created |
-| 204 | No content (e.g. delete company) |
-| 401 | Unauthorized (missing or invalid token) |
-| 403 | Forbidden (not a coordinator) |
-| 404 | Not found |
-| 422 | Validation error (body in response) |
+| Code | Meaning                                 |
+|------|-----------------------------------------|
+| 200  | OK                                      |
+| 201  | Created                                 |
+| 204  | No content (e.g. delete company)        |
+| 401  | Unauthorized (missing or invalid token) |
+| 403  | Forbidden (not a coordinator)           |
+| 404  | Not found                               |
+| 422  | Validation error (body in response)     |
 
 [↑ Back to index](#index)
+
