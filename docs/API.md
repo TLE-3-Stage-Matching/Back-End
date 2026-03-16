@@ -1830,7 +1830,8 @@ Returns user details. For **students**, includes all related profile data (profi
       }
     ],
     "student_tags": [
-      {
+      {"is_active": true,
+        "weight": 5,
         "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
       }
     ],
