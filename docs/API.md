@@ -624,9 +624,10 @@ Used when creating vacancies: company users can **select existing tags** (from t
 
 ---
 
+```markdown
 ## Languages
 
-A small public catalogue of languages and language proficiency levels that front-ends can use when letting users select languages on profiles or in vacancy forms.
+A small public catalogue of languages and language proficiency levels.
 
 ### List languages
 
@@ -634,13 +635,13 @@ A small public catalogue of languages and language proficiency levels that front
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/languages` |
-| **Auth** | Bearer token required |
+| **Auth** | None |
 
 **Query parameters:**
 
 | Param | Type | Description |
 |-------|------|-------------|
-| is_active | boolean | Optional. If provided, filters to active/inactive languages (e.g. `?is_active=1`). |
+| is_active | boolean | Optional. Filter by active state (e.g. `?is_active=1`). |
 
 **Success (200):**
 ```json
@@ -656,7 +657,6 @@ A small public catalogue of languages and language proficiency levels that front
   ],
   "links": { "self": "..." }
 }
-```
 
 ### List language levels
 
@@ -670,9 +670,9 @@ A small public catalogue of languages and language proficiency levels that front
 ```json
 {
   "data": [
-    { "id": 1, "name": "A2" },
-    { "id": 2, "name": "A1" },
-    { "id": 3, "name": "B2" }
+    { "id": 1, "name": "A1" },
+    { "id": 2, "name": "A2" },
+    { "id": 3, "name": "B1" }
   ],
   "links": { "self": "..." }
 }
@@ -1254,10 +1254,10 @@ Coordinators and company users can view any student's full profile including exp
   "data": [
     {
       "language_id": 1,
-      "language_level_id": 3,
+      "language_level_id": 2,
       "is_active": true,
       "language": { "id": 1, "name": "English" },
-      "language_level": { "id": 3, "name": "B2" }
+      "language_level": { "id": 2, "name": "B2" }
     }
   ],
   "links": { "self": "..." }
@@ -1831,31 +1831,16 @@ Returns user details. For **students**, includes all related profile data (profi
     ],
     "student_tags": [
       {
-        "id": 1,
-        "user_id": 1,
-        "tag_id": 5,
-        "weight": 3,
-        "tag": {
-          "id": 5,
-          "name": "PHP",
-          "tag_type": "skill"
-        }
+        "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
       }
     ],
     "student_languages": [
       {
-        "id": 1,
-        "user_id": 1,
         "language_id": 1,
-        "language_level_id": 2,
-        "language": {
-          "id": 1,
-          "name": "English"
-        },
-        "language_level": {
-          "id": 2,
-          "name": "Intermediate"
-        }
+        "language_level_id": 3,
+        "is_active": true,
+        "language": { "id": 1, "name": "English" },
+        "language_level": { "id": 3, "name": "Fluent" }
       }
     ],
     "student_preferences": {
