@@ -1312,7 +1312,108 @@ These endpoints return only **active** (coordinator-approved) companies and thei
 
 **Query parameters:** `per_page` (number, default 15) for pagination.
 
-**Success (200):** `{ "data": [ <vacancy objects> ], "meta": { "current_page", "last_page", "per_page", "total" }, "links": { "self": "..." } }` — only vacancies belonging to active companies.
+**Success (200):**
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "company_id": 1,
+            "location_id": null,
+            "title": "Backend Laravel Stagiair",
+            "hours_per_week": 40,
+            "description": "...",
+            "offer_text": null,
+            "expectations_text": null,
+            "status": "open",
+            "created_at": "...",
+            "updated_at": "...",
+            "is_active": false,
+            "company": {
+                "id": 1,
+                "name": "NovaByte Solutions B.V."
+            },
+            "vacancy_requirements": [
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 1,
+                    "requirement_type": "skill",
+                    "importance": 5,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 1,
+                        "name": "Laravel",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                },
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 2,
+                    "requirement_type": "skill",
+                    "importance": 5,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 2,
+                        "name": "PHP",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                },
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 3,
+                    "requirement_type": "skill",
+                    "importance": 4,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 3,
+                        "name": "MySQL",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                },
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 4,
+                    "requirement_type": "skill",
+                    "importance": 4,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 4,
+                        "name": "REST APIs",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "last_page": 1,
+        "per_page": 15,
+        "total": 1
+    },
+    "links": {
+        "self": "http://127.0.0.1:8001/api/v1/vacancies"
+    }
+}
+```
+
+Note: The public `/vacancies` response includes the vacancy's `is_active` flag. Each `vacancy_requirements` item includes `created_at`/`updated_at` and the nested `tag` object contains `is_active` and timestamps — the example above reflects what Postman returns from the API for a vacancy with multiple skill requirements.
 
 ---
 
@@ -1379,7 +1480,6 @@ Create and manage companies first; then add company users by `company_id`.
 }
 ```
 
-</details>
 
 ---
 
@@ -1460,7 +1560,7 @@ Same fields as [Create company](#create-company); all optional. Only send fields
 
 </details>
 
-**Approving self-registered companies:** Set `is_active` to `true` to approve a company. Until then, that company and its users/vacancies are excluded from [List active companies](#list-active-companies) and [List vacancies](#list-vacancies-active-companies-only).
+**Approving self-registered companies:** Set `is_active` to `true` to approve a company. Until then, that company and its users/vacancies are excluded from [List active companies](#list-active-companies) and [List vacancies](#list-vacancies-active-companies-only), and only their users when using `GET /coordinator/users?active_companies_only=1`.
 
 **Success (200):** `{ "data": <updated company> }`
 
