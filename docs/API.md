@@ -624,6 +624,66 @@ Used when creating vacancies: company users can **select existing tags** (from t
 
 ---
 
+## Languages
+
+A small public catalogue of languages and language proficiency levels that front-ends can use when letting users select languages on profiles or in vacancy forms.
+
+### List languages
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/languages` |
+| **Auth** | Bearer token required |
+
+**Query parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| is_active | boolean | Optional. If provided, filters to active/inactive languages (e.g. `?is_active=1`). |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "English",
+      "is_active": true,
+      "created_at": "...",
+      "updated_at": "..."
+    }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+### List language levels
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/language-levels` |
+| **Auth** | Bearer token required |
+
+**Success (200):**
+```json
+{
+  "data": [
+    { "id": 1, "name": "A2" },
+    { "id": 2, "name": "A1" },
+    { "id": 3, "name": "B2" }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+Note: To add languages to a student's profile include `language_id` and `language_level_id` in the `/student/languages` payload (see the existing [Student languages](#student-languages) section). The `/student/languages` endpoints are used to list and replace a student's languages (including the associated level for each language).
+
+[↑ Back to index](#index)
+
+---
+
 ## Vacancies (company)
 
 Company users create and list vacancies for their own company. Each vacancy can have **tags**: either by **selecting existing tag IDs** (from `GET /tags`) or by **creating new tags** by sending `name` and `tag_type` in the payload.
@@ -1197,7 +1257,7 @@ Coordinators and company users can view any student's full profile including exp
       "language_level_id": 3,
       "is_active": true,
       "language": { "id": 1, "name": "English" },
-      "language_level": { "id": 3, "name": "Fluent" }
+      "language_level": { "id": 3, "name": "B2" }
     }
   ],
   "links": { "self": "..." }
@@ -1771,19 +1831,31 @@ Returns user details. For **students**, includes all related profile data (profi
     ],
     "student_tags": [
       {
-        "tag_id": 1,
-        "is_active": true,
-        "weight": 5,
-        "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
+        "id": 1,
+        "user_id": 1,
+        "tag_id": 5,
+        "weight": 3,
+        "tag": {
+          "id": 5,
+          "name": "PHP",
+          "tag_type": "skill"
+        }
       }
     ],
     "student_languages": [
       {
+        "id": 1,
+        "user_id": 1,
         "language_id": 1,
-        "language_level_id": 3,
-        "is_active": true,
-        "language": { "id": 1, "name": "English" },
-        "language_level": { "id": 3, "name": "Fluent" }
+        "language_level_id": 2,
+        "language": {
+          "id": 1,
+          "name": "English"
+        },
+        "language_level": {
+          "id": 2,
+          "name": "Intermediate"
+        }
       }
     ],
     "student_preferences": {
