@@ -1591,6 +1591,107 @@ not appear here until a stage coordinator sets their `is_active` to `true`.
 **Success (200):**
 `{ "data": [ <vacancy objects> ], "meta": { "current_page", "last_page", "per_page", "total" }, "links": { "self": "..." } }` —
 only vacancies belonging to active companies.
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "company_id": 1,
+            "location_id": null,
+            "title": "Backend Laravel Stagiair",
+            "hours_per_week": 40,
+            "description": "...",
+            "offer_text": null,
+            "expectations_text": null,
+            "status": "open",
+            "created_at": "...",
+            "updated_at": "...",
+            "is_active": false,
+            "company": {
+                "id": 1,
+                "name": "NovaByte Solutions B.V."
+            },
+            "vacancy_requirements": [
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 1,
+                    "requirement_type": "skill",
+                    "importance": 5,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 1,
+                        "name": "Laravel",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                },
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 2,
+                    "requirement_type": "skill",
+                    "importance": 5,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 2,
+                        "name": "PHP",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                },
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 3,
+                    "requirement_type": "skill",
+                    "importance": 4,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 3,
+                        "name": "MySQL",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                },
+                {
+                    "vacancy_id": 1,
+                    "tag_id": 4,
+                    "requirement_type": "skill",
+                    "importance": 4,
+                    "created_at": "...",
+                    "updated_at": "...",
+                    "tag": {
+                        "id": 4,
+                        "name": "REST APIs",
+                        "tag_type": "skill",
+                        "is_active": true,
+                        "created_at": "...",
+                        "updated_at": "..."
+                    }
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "current_page": 1,
+        "last_page": 1,
+        "per_page": 15,
+        "total": 1
+    },
+    "links": {
+        "self": "http://127.0.0.1:8001/api/v1/vacancies"
+    }
+}
+```
+
+Note: The public `/vacancies` response includes the vacancy's `is_active` flag. Each `vacancy_requirements` item includes `created_at`/`updated_at` and the nested `tag` object contains `is_active` and timestamps — the example above reflects what Postman returns from the API for a vacancy with multiple skill requirements.
 
 ---
 
@@ -1660,7 +1761,6 @@ Create and manage companies first; then add company users by `company_id`.
 }
 ```
 
-</details>
 
 ---
 
@@ -2097,7 +2197,11 @@ Omit `password` or send `null` to leave it unchanged.
 | **Method** | `DELETE`                  |
 | **Path**   | `/coordinator/users/{id}` |
 
+Only **students** can be deleted. Attempting to delete a coordinator or company user returns **403**.  
+Deleting a student also **cascades** to their related data (profile, experiences, tags, languages, preferences, favorites, saved vacancies, messages, conversations, and other student-specific records), either removing those rows or nulling references where configured.
+
 **Success (200):** `{ "message": "User deleted successfully." }`
+**Error (403):** `{ "message": "Alleen studenten kunnen verwijderd worden" }`
 **Error (404):** `{ "message": "User not found." }`
 
 [↑ Back to index](#index)
