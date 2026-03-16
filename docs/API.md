@@ -665,6 +665,66 @@ in the vacancy payload.
 
 ---
 
+```markdown
+## Languages
+
+A small public catalogue of languages and language proficiency levels.
+
+### List languages
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/languages` |
+| **Auth** | None |
+
+**Query parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| is_active | boolean | Optional. Filter by active state (e.g. `?is_active=1`). |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "English",
+      "is_active": true,
+      "created_at": "...",
+      "updated_at": "..."
+    }
+  ],
+  "links": { "self": "..." }
+}
+
+### List language levels
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/language-levels` |
+| **Auth** | Bearer token required |
+
+**Success (200):**
+```json
+{
+  "data": [
+    { "id": 1, "name": "A1" },
+    { "id": 2, "name": "A2" },
+    { "id": 3, "name": "B1" }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+Note: To add languages to a student's profile include `language_id` and `language_level_id` in the `/student/languages` payload (see the existing [Student languages](#student-languages) section). The `/student/languages` endpoints are used to list and replace a student's languages (including the associated level for each language).
+
+[↑ Back to index](#index)
+
+---
+
 ## Vacancies (company)
 
 Company users create and list vacancies for their own company. Each vacancy can have **tags**: either by **selecting
