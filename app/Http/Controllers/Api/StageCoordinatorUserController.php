@@ -209,6 +209,99 @@ class StageCoordinatorUserController extends Controller
         return response()->json(['message' => 'User deleted successfully.'], 200);
     }
 
+    /**
+     * Assign a student to a coordinator (can be any coordinator).
+     */
+    public function assignCoordinator(Request $request, User $student): JsonResponse
+    {
+        if ($student->role !== UserRole::Student) {
+            return response()->json(['message' => 'User is not a student.'], 422);
+        }
+
+        $validated = $request->validate([
+            'coordinator_user_id' => ['required', 'integer', 'exists:users,id'],
+            'note' => ['nullable', 'string'],
+        ]);
+
+        $coordinator = User::query()
+            ->whereKey($validated['coordinator_user_id'])
+            ->where('role', UserRole::Coordinator)
+            ->first();
+
+        if (! $coordinator) {
+            return response()->json(['message' => 'Coordinator not found.'], 422);
+        }
+
+        $assignment = StudentCoordinatorAssignment::create([
+            'student_user_id' => $student->id,
+            'coordinator_user_id' => $coordinator->id,
+            'assigned_by_user_id' => auth('api')->id(),
+            'assigned_at' => now(),
+            'unassigned_at' => null,
+            'note' => $validated['note'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Coordinator assigned to student successfully.',
+            'data' => [
+                'id' => $assignment->id,
+                'student_user_id' => $assignment->student_user_id,
+                'coordinator_user_id' => $assignment->coordinator_user_id,
+                'assigned_by_user_id' => $assignment->assigned_by_user_id,
+                'assigned_at' => $assignment->assigned_at?->toIso8601String(),
+                'unassigned_at' => $assignment->unassigned_at?->toIso8601String(),
+                'note' => $assignment->note,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Unassign a student from a coordinator (optionally specifying which coordinator).
+     */
+    public function unassignCoordinator(Request $request, User $student): JsonResponse
+    {
+        if ($student->role !== UserRole::Student) {
+            return response()->json(['message' => 'User is not a student.'], 422);
+        }
+
+        $validated = $request->validate([
+            'coordinator_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'note' => ['nullable', 'string'],
+        ]);
+
+        $coordinatorId = $validated['coordinator_user_id'] ?? auth('api')->id();
+
+        $assignment = StudentCoordinatorAssignment::query()
+            ->where('student_user_id', $student->id)
+            ->where('coordinator_user_id', $coordinatorId)
+            ->whereNull('unassigned_at')
+            ->latest('assigned_at')
+            ->first();
+
+        if (! $assignment) {
+            return response()->json(['message' => 'Active assignment not found.'], 404);
+        }
+
+        $assignment->unassigned_at = now();
+        if (array_key_exists('note', $validated)) {
+            $assignment->note = $validated['note'];
+        }
+        $assignment->save();
+
+        return response()->json([
+            'message' => 'Student unassigned from coordinator successfully.',
+            'data' => [
+                'id' => $assignment->id,
+                'student_user_id' => $assignment->student_user_id,
+                'coordinator_user_id' => $assignment->coordinator_user_id,
+                'assigned_by_user_id' => $assignment->assigned_by_user_id,
+                'assigned_at' => $assignment->assigned_at?->toIso8601String(),
+                'unassigned_at' => $assignment->unassigned_at?->toIso8601String(),
+                'note' => $assignment->note,
+            ],
+        ]);
+    }
+
     private function formatUser(User $user): array
     {
         $data = [
