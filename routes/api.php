@@ -99,22 +99,6 @@ Route::prefix('v1')->group(function () {
             Route::get('student/vacancies-with-scores', [StudentMatchScoreController::class, 'vacanciesWithScores']);
         });
 
-        // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users), match scores for student
-            //Languages (sync)
-            Route::get('student/languages', [StudentProfileController::class, 'listLanguages']);
-            Route::put('student/languages', [StudentProfileController::class, 'syncLanguages']);
-
-            Route::get('student/saved-vacancies', [StudentSavedVacancyController::class, 'index']);
-            Route::post('student/saved-vacancies', [StudentSavedVacancyController::class, 'store']);
-            Route::delete('student/saved-vacancies/{vacancyId}', [StudentSavedVacancyController::class, 'destroy']);
-
-
-            Route::get('student/{student}', [StudentProfileViewController::class, 'show'])
-                ->whereNumber('student');
-        });
-
-
-
         // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users)
         Route::middleware('coordinator')->group(function () {
             Route::get('coordinator/vacancies', [CoordinatorVacancyController::class, 'index']);
