@@ -58,7 +58,6 @@ Route::prefix('v1')->group(function () {
         // Student-only: own profile, experiences, preferences, languages, tags
         Route::middleware('student')->group(function () {
             // Profile (user + student_profile)
-            Route::get('student/profile', [StudentProfileController::class, 'show']);
             Route::match(['put', 'patch'], 'student/profile', [StudentProfileController::class, 'update']);
 
             // Preferences
@@ -91,6 +90,10 @@ Route::prefix('v1')->group(function () {
             Route::get('student/saved-vacancies', [StudentSavedVacancyController::class, 'index']);
             Route::post('student/saved-vacancies', [StudentSavedVacancyController::class, 'store']);
             Route::delete('student/saved-vacancies/{vacancyId}', [StudentSavedVacancyController::class, 'destroy']);
+
+
+            Route::get('student/{student}', [StudentProfileViewController::class, 'show'])
+                ->whereNumber('student');
         });
 
 
