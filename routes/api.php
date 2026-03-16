@@ -99,6 +99,8 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('coordinator/users', StageCoordinatorUserController::class);
             Route::post('coordinator/users/{student}/assignments', [StageCoordinatorUserController::class, 'assignCoordinator']);
             Route::post('coordinator/users/{student}/unassignments', [StageCoordinatorUserController::class, 'unassignCoordinator']);
+            Route::post('coordinator/vacancies/{vacancy}/comments', [CoordinatorVacancyController::class, 'storeComment']);
+            
         });
     });
 });

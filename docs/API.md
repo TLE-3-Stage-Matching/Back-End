@@ -57,6 +57,7 @@ updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacan
     - [Companies (coordinator)](#companies-coordinator)
     - [Users (coordinator)](#users-coordinator)
     - [Vacancies (coordinator)](#vacancies-coordinator)
+    - [Add comment to vacancy](#add-comment-to-vacancy)
     - [Student–coordinator assignments](#studentcoordinator-assignments-coordinator)
 - [Public data (no auth)](#public-data-no-auth)
     - [List active companies](#list-active-companies)
@@ -2510,6 +2511,40 @@ Coordinators can list all vacancies across companies with optional filtering.
     }
 }
 ```
+
+[↑ Back to index](#index)
+
+---
+
+### Add comment to vacancy
+
+Coordinators can add comments to vacancies. Comments are visible to all users with access to the vacancy (students,
+company users, coordinators).
+
+|            |                                        |
+|------------|----------------------------------------|
+| **Method** | `POST`                                 |
+| **Path**   | `/coordinator/vacancies/{id}/comments` |
+| **Auth**   | Bearer token + coordinator role        |
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+    "comment": "Looking for a candidate with strong PHP skills."
+}
+```
+
+</details>
+
+| Field   | Type   | Required | Notes   |
+|---------|--------|----------|---------|
+| comment | string | Yes      | Max 500 |
+
+**Success (201):** `{ "data": <comment object>, "links": { "self": "..." } }`  
+**Error (404):** Vacancy not found.  
+**Error (403):** User is not a coordinator.
 
 [↑ Back to index](#index)
 
