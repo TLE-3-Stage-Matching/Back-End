@@ -50,6 +50,9 @@ For conventions on updating this doc and adding new API functionality, see [CONV
   - [Student languages](#student-languages)
   - [Student tags](#student-tags)
   - [Vacancies with match scores (student)](#vacancies-with-match-scores-student)
+  - [Top 3 matches (student)](#top-3-matches-student)
+  - [All vacancies with scores (student)](#all-vacancies-with-scores-student)
+  - [Vacancy score detail (student)](#vacancy-score-detail-student)
 - [Coordinators](#coordinators)
   - [Coordinator-only endpoints](#coordinator-only-endpoints)
   - [Companies (coordinator)](#companies-coordinator)
@@ -1296,7 +1299,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
 
 ## Vacancies with match scores (student)
 
-Students can list vacancies (from active companies only) with a **match score** (0–100%) and **subscores by category** (skill, industry, major, trait), each with a short explanation. The list is **sorted by overall match score descending** (best matches first). The score is computed using **cosine similarity** over the student’s tags and the vacancy’s requirement tags. When computing the score and subscores, the algorithm uses at most **6 skills** and **4 traits** per student and per vacancy (other tag types have their own limits; see config). Each subscore is the same metric over one tag type, with an explanation describing why the user got that score.
+Students can view vacancies (from active companies only) with a **match score** (0–100%) and **subscores by category** (skill, industry, major, trait), each with a short explanation. The list is **sorted by overall match score descending** (best matches first). The score is computed using **cosine similarity** over the student’s tags and the vacancy’s requirement tags. When computing the score and subscores, the algorithm uses at most **6 skills** and **4 traits** per student and per vacancy (other tag types have their own limits; see config). Each subscore is the same metric over one tag type, with an explanation describing why the user got that score.
 
 ### List vacancies with match scores (student)
 
@@ -1355,6 +1358,199 @@ Students can list vacancies (from active companies only) with a **match score** 
 | subscores | Per-category scores: **skill** and **trait** only. Each has `score` (0–100) and `explanation` (short text). The percentage is **weighted** by how well your tag strengths align with the vacancy’s requirements (cosine similarity), so e.g. 2 of 6 required tags matching can yield more than 33% when those matches have high weight/importance. |
 
 **Error (401/403):** Not authenticated or not a student.
+
+[↑ Back to index](#index)
+
+---
+
+## Top 3 matches (student)
+
+Returns the **top 3** best-matching vacancies for the authenticated student using the tag-based matching algorithm.
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/vacancies/top-matches` |
+| **Auth** | Bearer token + student role |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "vacancy_id": 12,
+      "title": "Junior DevOps Engineer",
+      "company": "Acme Corp",
+      "score": 91
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| vacancy_id | Vacancy ID |
+| title | Vacancy title |
+| company | Company name |
+| score | Final score (0–100) |
+
+**Error (401/403):** Not authenticated or not a student.
+
+[↑ Back to index](#index)
+
+---
+
+## All vacancies with scores (student)
+
+Returns **all eligible vacancies** (active companies) with score details, sorted by score descending.
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/vacancies/with-scores` |
+| **Auth** | Bearer token + student role |
+
+**Success (200):**
+```json
+{
+  "data": [
+    {
+      "vacancy_id": 12,
+      "title": "Junior DevOps Engineer",
+      "company": "Acme Corp",
+      "score": 91,
+      "must_have_misses": [34],
+      "breakdown": {
+        "s_mh": 0.95,
+        "s_nth": 0.8,
+        "s_tags": 0.92,
+        "penalty": 0.05
+      }
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| score | Final score (0–100) |
+| must_have_misses | Array of missing must-have `tag_id`s |
+| breakdown.s_mh | Must-have subscore |
+| breakdown.s_nth | Nice-to-have subscore |
+| breakdown.s_tags | Combined score before penalty |
+| breakdown.penalty | Missing must-have penalty |
+
+**Error (401/403):** Not authenticated or not a student.
+
+[↑ Back to index](#index)
+
+---
+
+## Vacancy score detail (student)
+
+Provides a **single vacancy score explanation** that students can read to understand what is missing and how to improve.
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/vacancies/{vacancy}/detail` |
+| **Auth** | Bearer token + student role |
+
+**Path parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| vacancy | number | Vacancy ID |
+
+**Success (200):**
+```json
+{
+  "data": {
+    "vacancy": {
+      "id": 12,
+      "title": "Junior DevOps Engineer",
+      "company": "Acme Corp"
+    },
+    "score": 74,
+    "breakdown": {
+      "s_mh": 0.81,
+      "s_nth": 0.65,
+      "s_tags": 0.778,
+      "penalty": 0.04
+    },
+    "must_have_misses": [
+      { "tag_id": 37, "tag_name": "Kubernetes" }
+    ],
+    "nice_to_have_misses": [
+      { "tag_id": 45, "tag_name": "Ansible", "importance": 3 }
+    ],
+    "human_explanation": {
+      "summary": "You match this vacancy with a score of 74. You meet 4/5 must-have tags and 2/3 nice-to-have tags. Missing 1 must-have tag lowers your score the most.",
+      "what_you_match_well": ["Docker", "CI/CD", "Git"],
+      "what_to_improve_next": ["Kubernetes", "Ansible"],
+      "tips": [
+        "Focus first on missing must-have tags, especially high-importance ones (4-5).",
+        "Add missing skills to your profile only if you can realistically perform them.",
+        "Improve existing tag weights by gaining project or internship experience in those skills."
+      ]
+    },
+    "tags": {
+      "all": [
+        {
+          "tag_id": 37,
+          "tag_name": "Kubernetes",
+          "requirement_type": "must_have",
+          "importance": 5,
+          "student_has_tag": false,
+          "student_weight": null,
+          "match_multiplier": 0,
+          "weighted_contribution": 0
+        }
+      ]
+    }
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| must_have_misses | Missing must-have tags with id + name |
+| nice_to_have_misses | Missing nice-to-have tags with id + name + importance |
+| human_explanation.summary | Student-readable summary of why score is high/low |
+| human_explanation.what_to_improve_next | Prioritized missing tags to improve score |
+| tags.all | Tag-by-tag technical breakdown of contribution |
+
+**Error (404):** Vacancy not found or vacancy not visible to students (e.g. company not active).  
+**Error (401/403):** Not authenticated or not a student.
+
+[↑ Back to index](#index)
+
+---
+
+## Matching formula correction (important)
+
+To avoid confusion: for **student matching routes**, the scoring is **not cosine similarity**.
+
+The following student routes use the weighted rules-based algorithm implemented in `VacancyMatchingService`:
+
+- `GET /student/vacancies/top-matches`
+- `GET /student/vacancies/with-scores`
+- `GET /student/vacancies/{vacancy}/detail`
+- `GET /student/vacancies-with-scores`
+
+### Actual student scoring model
+
+- `m_k = 1 + (w_k - 3) / 20` when the student has a tag, else `0`
+- `i_hat = importance / 5`
+- `S_MH` = weighted average over must-have tags (or `1.0` when none)
+- `S_NTH` = weighted average over nice-to-have tags (or `1.0` when none)
+- `S_tags = 0.8 * S_MH + 0.2 * S_NTH`
+- `penalty = (missing_must_haves / total_must_haves) * 0.25`
+- `final_score = clamp((S_tags - penalty) * 100, 0, 100)`
+
+This means older text in this document that mentions cosine similarity for student matching should be treated as historical/outdated.
+
+> Note: the coordinator route `GET /coordinator/students/{user}/vacancies-with-scores` is currently implemented with `StudentVacancyTagMatchService`, which is a different scoring implementation.
 
 [↑ Back to index](#index)
 

@@ -60,7 +60,6 @@ Route::prefix('v1')->group(function () {
             // Profile (user + student_profile)
             Route::get('student/profile', [StudentProfileController::class, 'show']);
             Route::match(['put', 'patch'], 'student/profile', [StudentProfileController::class, 'update']);
-
             // Preferences
             Route::get('student/preferences', [StudentProfileController::class, 'showPreferences']);
             Route::match(['put', 'patch'], 'student/preferences', [StudentProfileController::class, 'updatePreferences']);
