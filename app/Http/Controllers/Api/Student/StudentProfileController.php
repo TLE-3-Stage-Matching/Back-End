@@ -251,7 +251,7 @@ class StudentProfileController extends Controller
                 'student_user_id' => $user->id,
                 'tag_id' => $tagData['tag_id'],
                 'is_active' => $tagData['is_active'] ?? true,
-                'weight' => $tagData['weight'] ?? null,
+                'weight' => $tagData['weight'] ?? 3,
             ]);
         }
 

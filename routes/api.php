@@ -5,6 +5,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Api\Student\StudentSavedVacancyController;
 use App\Http\Controllers\Api\Company\CompanyAccountController as CompanyAccountController;
 use App\Http\Controllers\Api\Company\VacancyController as CompanyVacancyController;
+use App\Http\Controllers\Api\Coordinator\CoordinatorMatchController;
 use App\Http\Controllers\Api\Coordinator\CoordinatorVacancyController;
 use App\Http\Controllers\Api\AdminApiKeyController;
 use App\Http\Controllers\Api\DevApiKeyController;
@@ -12,7 +13,9 @@ use App\Http\Controllers\CompanyRegistrationController;
 use App\Http\Controllers\Api\CoordinatorRegisterController;
 use App\Http\Controllers\Api\PublicCompanyController;
 use App\Http\Controllers\Api\StageCoordinatorUserController;
+use App\Http\Controllers\Api\Student\StudentMatchScoreController;
 use App\Http\Controllers\Api\Student\StudentProfileController;
+use App\Http\Controllers\Api\Student\StudentVacancyMatchController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\VacancyController;
 use App\Http\Controllers\Api\Student\StudentFavoriteCompanyController;
@@ -55,14 +58,15 @@ Route::prefix('v1')->group(function () {
             Route::get('company/vacancies/{vacancy}', [CompanyVacancyController::class, 'show']);
             Route::match(['put', 'patch'], 'company/vacancies/{vacancy}', [CompanyVacancyController::class, 'update']);
             Route::delete('company/vacancies/{vacancy}', [CompanyVacancyController::class, 'destroy']);
+            Route::get('company/vacancies/{vacancy}/comments', [CompanyVacancyController::class, 'listComments']);
+            Route::patch('company/vacancies/comments/{comment}', [CompanyVacancyController::class, 'updateComment']);
+            Route::delete('company/vacancies/comments/{comment}', [CompanyVacancyController::class, 'destroyComment']);
         });
 
         // Student-only: own profile, experiences, preferences, languages, tags
         Route::middleware('student')->group(function () {
             // Profile (user + student_profile)
-            Route::get('student/profile', [StudentProfileController::class, 'show']);
             Route::match(['put', 'patch'], 'student/profile', [StudentProfileController::class, 'update']);
-
             // Preferences
             Route::get('student/preferences', [StudentProfileController::class, 'showPreferences']);
             Route::match(['put', 'patch'], 'student/preferences', [StudentProfileController::class, 'updatePreferences']);
@@ -86,18 +90,41 @@ Route::prefix('v1')->group(function () {
             Route::get('student/tags', [StudentProfileController::class, 'listTags']);
             Route::put('student/tags', [StudentProfileController::class, 'syncTags']);
 
+            // Vacancy matching (tag-based scoring)
+            Route::get('student/vacancies/top-matches', [StudentVacancyMatchController::class, 'topMatches']);
+            Route::get('student/vacancies/with-scores', [StudentVacancyMatchController::class, 'withScores']);
+            Route::get('student/vacancies/{vacancy}/detail', [StudentVacancyMatchController::class, 'detail']);
+
+            // Match scores: list vacancies with scores (sorted by score), subscores + explanations
+            Route::get('student/vacancies-with-scores', [StudentMatchScoreController::class, 'vacanciesWithScores']);
+        });
+
+        // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users), match scores for student
+            //Languages (sync)
+            Route::get('student/languages', [StudentProfileController::class, 'listLanguages']);
+            Route::put('student/languages', [StudentProfileController::class, 'syncLanguages']);
+
             Route::get('student/saved-vacancies', [StudentSavedVacancyController::class, 'index']);
             Route::post('student/saved-vacancies', [StudentSavedVacancyController::class, 'store']);
             Route::delete('student/saved-vacancies/{vacancyId}', [StudentSavedVacancyController::class, 'destroy']);
+
+
+            Route::get('student/{student}', [StudentProfileViewController::class, 'show'])
+                ->whereNumber('student');
         });
+
+
 
         // Coordinator-only: list vacancies, CRUD companies, CRUD users (students + company users)
         Route::middleware('coordinator')->group(function () {
             Route::get('coordinator/vacancies', [CoordinatorVacancyController::class, 'index']);
+            Route::get('coordinator/students/{user}/vacancies-with-scores', [CoordinatorMatchController::class, 'studentVacanciesWithScores']);
             Route::apiResource('coordinator/companies', CompanyController::class);
             Route::apiResource('coordinator/users', StageCoordinatorUserController::class);
             Route::post('coordinator/users/{student}/assignments', [StageCoordinatorUserController::class, 'assignCoordinator']);
             Route::post('coordinator/users/{student}/unassignments', [StageCoordinatorUserController::class, 'unassignCoordinator']);
+            Route::post('coordinator/vacancies/{vacancy}/comments', [CoordinatorVacancyController::class, 'storeComment']);
+            
         });
     });
 });
