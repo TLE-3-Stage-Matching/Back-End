@@ -18,9 +18,9 @@ return new class extends Migration
                 CREATE TRIGGER chk_users_role_insert
                 BEFORE INSERT ON users
                 FOR EACH ROW
-                WHEN NEW.role NOT IN ('student', 'coordinator', 'company')
+                WHEN NEW.role NOT IN ('student', 'coordinator', 'company', 'admin', 'dev')
                 BEGIN
-                    SELECT RAISE(ABORT, 'Invalid role. Must be student, coordinator, or company.');
+                    SELECT RAISE(ABORT, 'Invalid role. Must be student, coordinator, company, admin, or dev.');
                 END;
             ");
 
@@ -28,13 +28,13 @@ return new class extends Migration
                 CREATE TRIGGER chk_users_role_update
                 BEFORE UPDATE ON users
                 FOR EACH ROW
-                WHEN NEW.role NOT IN ('student', 'coordinator', 'company')
+                WHEN NEW.role NOT IN ('student', 'coordinator', 'company', 'admin', 'dev')
                 BEGIN
-                    SELECT RAISE(ABORT, 'Invalid role. Must be student, coordinator, or company.');
+                    SELECT RAISE(ABORT, 'Invalid role. Must be student, coordinator, company, admin, or dev.');
                 END;
             ");
         } else {
-            DB::statement("ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (role IN ('student', 'coordinator', 'company'))");
+            DB::statement(\"ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (role IN ('student', 'coordinator', 'company', 'admin', 'dev'))\");
         }
     }
 

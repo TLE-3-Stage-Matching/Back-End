@@ -4,8 +4,14 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    $path = base_path('docs/API.md');
-    $apiDocMarkdown = File::exists($path) ? File::get($path) : '# API Documentation\n\nFile not found.';
+    $v1Path = base_path('docs/API.md');
+    $v2Path = base_path('docs/API-v2.md');
 
-    return view('welcome', ['apiDocMarkdown' => $apiDocMarkdown]);
+    $apiDocV1Markdown = File::exists($v1Path) ? File::get($v1Path) : '# v1 Documentation\n\nFile not found.';
+    $apiDocV2Markdown = File::exists($v2Path) ? File::get($v2Path) : '# v2 Documentation\n\nFile not found.';
+
+    return view('welcome', [
+        'apiDocV1Markdown' => $apiDocV1Markdown,
+        'apiDocV2Markdown' => $apiDocV2Markdown,
+    ]);
 });

@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'coordinator' => \App\Http\Middleware\EnsureUserIsCoordinator::class,
             'company' => \App\Http\Middleware\EnsureUserIsCompany::class,
             'student' => \App\Http\Middleware\EnsureUserIsStudent::class,
+            'dev' => \App\Http\Middleware\EnsureUserIsDev::class,
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'api-key' => \App\Http\Middleware\RequireApiKey::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

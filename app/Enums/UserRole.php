@@ -7,5 +7,7 @@ enum UserRole: string
     case Student = 'student';
     case Coordinator = 'coordinator';
     case Company = 'company';
+    case Admin = 'admin';
+    case Dev = 'dev';
 }
 

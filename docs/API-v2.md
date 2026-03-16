@@ -1,31 +1,39 @@
-# API Documentation – Front-end reference
+# API Documentation (v2) – Front-end reference
 
 ## API key details
 
-- **v1 – JWT only (current)**  
-  - Base URL: `https://<your-api-host>/api/v1`  
-  - Auth: JWT Bearer token for protected routes. **No API key** required.
-
-- **v2 – API key + JWT (recommended)**  
+- **v2 – API key + JWT**  
   - Base URL: `https://<your-api-host>/api/v2`  
   - Auth: API key in `X-API-KEY` header for all routes, plus JWT Bearer token for protected routes where applicable.
 
-**v2 headers example:**
+**v2 headers example (public call):**
 
 ```http
+GET /api/v2/companies HTTP/1.1
+Host: <your-api-host>
 X-API-KEY: <your-api-key>
-Authorization: Bearer <jwt-token>   # protected v2 routes only
+Accept: application/json
 ```
 
-New front-ends should target **v2**. Existing clients can continue to use **v1** while migrating.
+**v2 headers example (protected call):**
+
+```http
+GET /api/v2/auth/me HTTP/1.1
+Host: <your-api-host>
+X-API-KEY: <your-api-key>
+Authorization: Bearer <jwt-token>
+Accept: application/json
+```
+
+This document describes **v2** only.
 
 ---
 
-# v1 – Front-end reference
+# v2 – Front-end reference
 
-**Base URL:** `https://<your-api-host>/api/v1`  
+**Base URL:** `https://<your-api-host>/api/v2`  
 **Content type:** `application/json`  
-**Auth:** JWT Bearer token for protected routes.
+**Auth:** API key in `X-API-KEY` for all routes, plus JWT Bearer token for protected routes.
 
 For conventions on updating this doc and adding new API functionality, see [CONVENTIONS.md](CONVENTIONS.md) (For Backend only).
 
@@ -33,7 +41,7 @@ For conventions on updating this doc and adding new API functionality, see [CONV
 
 ---
 
-## Overview – by role
+## Overview – by role (v2)
 
 | Role | Capabilities |
 |------|--------------|
@@ -48,45 +56,41 @@ For conventions on updating this doc and adding new API functionality, see [CONV
 
 ---
 
-## Index
+## Index (v2)
 
-- [Overview – by role](#overview--by-role)
-- [Authentication](#authentication)
-  - [1. Register as coordinator](#1-register-as-coordinator-stage-coordinator)
-  - [2. Register as company (self-registration)](#2-register-as-company-self-registration)
-  - [3. Login (get JWT)](#3-login-get-jwt)
-  - [4. Current user (me)](#4-current-user-me)
-  - [5. Logout](#5-logout)
-  - [6. Refresh token](#6-refresh-token)
-  - [7. Using JWT from front-ends (SPA / mobile)](#7-using-jwt-from-front-ends-spa--mobile)
-- [Company users](#company-users)
-  - [Company-only endpoints](#company-only-endpoints)
-  - [My company](#my-company)
-  - [My profile](#my-profile)
-  - [Tags](#tags)
-  - [Vacancies (company)](#vacancies-company)
-- [Students](#students)
-  - [Student-only endpoints](#student-only-endpoints)
-  - [Student profile](#student-profile)
-  - [Student preferences](#student-preferences)
-  - [Student experiences](#student-experiences)
-  - [Student languages](#student-languages)
-  - [Student tags](#student-tags)
-- [Coordinators](#coordinators)
-  - [Coordinator-only endpoints](#coordinator-only-endpoints)
-  - [Companies (coordinator)](#companies-coordinator)
-  - [Users (coordinator)](#users-coordinator)
-  - [Vacancies (coordinator)](#vacancies-coordinator)
-  - [Student–coordinator assignments](#studentcoordinator-assignments-coordinator)
-- [Public data (no auth)](#public-data-no-auth)
-  - [List active companies](#list-active-companies)
-  - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
-- [Reference](#reference)
-  - [Recommended flow for coordinators](#recommended-flow-for-coordinators)
-  - [Testing with Postman](#testing-with-postman)
-  - [HTTP status codes](#http-status-codes)
+- [Overview – by role (v2)](#overview--by-role-v2)
+- [Authentication (v2)](#authentication)
+  - [1. Register as coordinator (v2)](#1-register-as-coordinator-stage-coordinator)
+  - [2. Register as company (self-registration) (v2)](#2-register-as-company-self-registration)
+  - [3. Login (get JWT) (v2)](#3-login-get-jwt)
+  - [4. Current user (me) (v2)](#4-current-user-me)
+  - [5. Logout (v2)](#5-logout)
+  - [6. Refresh token (v2)](#6-refresh-token)
+  - [7. Using JWT from front-ends (SPA / mobile) (v2)](#7-using-jwt-from-front-ends-spa--mobile)
+- [Company users (v2)](#company-users)
+  - [Company-only endpoints (v2)](#company-only-endpoints)
+  - [My company (v2)](#my-company)
+  - [My profile (v2)](#my-profile)
+  - [Tags (v2)](#tags)
+  - [Vacancies (company) (v2)](#vacancies-company)
+- [Students (v2)](#students)
+  - [Student-only endpoints (v2)](#student-only-endpoints)
+  - [Student profile (v2)](#student-profile)
+  - [Student preferences (v2)](#student-preferences)
+  - [Student experiences (v2)](#student-experiences)
+  - [Student languages (v2)](#student-languages)
+  - [Student tags (v2)](#student-tags)
+- [Coordinators (v2)](#coordinators)
+  - [Coordinator-only endpoints (v2)](#coordinator-only-endpoints)
+  - [Companies (coordinator) (v2)](#companies-coordinator)
+  - [Users (coordinator) (v2)](#users-coordinator)
+  - [Vacancies (coordinator) (v2)](#vacancies-coordinator)
+  - [Student–coordinator assignments (coordinator) (v2)](#studentcoordinator-assignments-coordinator)
+- [Public data (v2)](#public-data-v2)
+  - [List active companies (v2)](#list-active-companies-v2)
+  - [List vacancies (active companies only) (v2)](#list-vacancies-active-companies-only-v2)
 
-[↑ Back to top](#api-documentation-v1--front-end-reference)
+[↑ Back to top](#api-documentation-v2--front-end-reference)
 
 ---
 
@@ -100,7 +104,7 @@ Creates a new coordinator account. No auth required.
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/auth/register/coordinator` |
-| **Auth** | None |
+| **Auth** | `X-API-KEY` required |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
@@ -152,7 +156,7 @@ Companies can register themselves. The company is created with `is_active: false
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/auth/register/company` |
-| **Auth** | None |
+| **Auth** | `X-API-KEY` required |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
@@ -222,7 +226,7 @@ Returns a JWT for all subsequent protected requests.
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/auth/login` |
-| **Auth** | None |
+| **Auth** | `X-API-KEY` required |
 
 <details>
 <summary><strong>Request body (JSON)</strong></summary>
@@ -265,7 +269,7 @@ Authorization: Bearer <token>
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/auth/me` |
-| **Auth** | Bearer token required |
+| **Auth** | `X-API-KEY` + Bearer token required |
 
 **Success (200):** `{ "data": <user object> }` (full user as returned by Laravel auth).
 
@@ -277,7 +281,7 @@ Authorization: Bearer <token>
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/auth/logout` |
-| **Auth** | Bearer token required |
+| **Auth** | `X-API-KEY` + Bearer token required |
 
 **Success (200):** `{ "message": "Logged out" }`
 
@@ -289,7 +293,7 @@ Authorization: Bearer <token>
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/auth/refresh` |
-| **Auth** | Bearer token required |
+| **Auth** | `X-API-KEY` + Bearer token required |
 
 **Success (200):** Same shape as login: `{ "token": "...", "token_type": "Bearer" }`
 
@@ -303,7 +307,7 @@ This section explains **how to implement authentication in a front-end** (React,
 
 #### 7.1 Basic login flow
 
-1. **Show a login form** that posts to `POST /api/v1/auth/login` with `email` and `password`.
+1. **Show a login form** that posts to `POST /api/v2/auth/login` with `email` and `password`.
 2. On **success**, the API returns:
    ```json
    {
@@ -329,7 +333,7 @@ Authorization: Bearer <token>
 ```js
 const token = localStorage.getItem('token');
 
-const res = await fetch('/api/v1/company', {
+const res = await fetch('/api/v2/company', {
   headers: {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
@@ -340,7 +344,7 @@ const res = await fetch('/api/v1/company', {
 #### 7.3 How refresh works
 
 - JWTs are **time-limited**. When a token expires, protected endpoints will start returning **401 Unauthorized**.
-- To keep the user logged in without showing the login screen again, you can call `POST /api/v1/auth/refresh` with the **current (still-present) token** in the `Authorization` header.
+- To keep the user logged in without showing the login screen again, you can call `POST /api/v2/auth/refresh` with the **current (still-present) token** in the `Authorization` header.
 - The response has the same shape as login:
   ```json
   {
@@ -366,7 +370,7 @@ const res = await fetch('/api/v1/company', {
 async function apiRequest(path, options = {}) {
   const token = localStorage.getItem('token');
 
-  const res = await fetch(`/api/v1${path}`, {
+  const res = await fetch(`/api/v2${path}`, {
     ...options,
     headers: {
       ...(options.headers || {}),
@@ -377,7 +381,7 @@ async function apiRequest(path, options = {}) {
 
   // If token expired, try refresh once
   if (res.status === 401 && token) {
-    const refreshRes = await fetch('/api/v1/auth/refresh', {
+    const refreshRes = await fetch('/api/v2/auth/refresh', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -393,7 +397,7 @@ async function apiRequest(path, options = {}) {
     localStorage.setItem('token', newToken);
 
     // Retry original request with new token
-    const retryRes = await fetch(`/api/v1${path}`, {
+    const retryRes = await fetch(`/api/v2${path}`, {
       ...options,
       headers: {
         ...(options.headers || {}),
@@ -480,7 +484,7 @@ Company users can view and update **their own company** (the company they are li
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/company` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Returns the authenticated user’s company.
 
@@ -494,7 +498,7 @@ Returns the authenticated user’s company.
 |---|---|
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/company` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Update your company. Only include fields you want to change.
 
@@ -541,7 +545,7 @@ Company users can view and update **their own profile** (user fields and job tit
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/company/profile` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Returns the authenticated user’s profile including `company_user` and `company`.  
 **Note:** `GET /auth/me` also returns the current user and, for company users, includes `company_user` and `company` when loaded.
@@ -575,7 +579,7 @@ Returns the authenticated user’s profile including `company_user` and `company
 |---|---|
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/company/profile` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Update your user fields and/or job title. Only include fields you want to change. Omit `password` or send `null` to leave it unchanged.
 
@@ -618,7 +622,7 @@ Used when creating vacancies: company users can **select existing tags** (from t
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/tags` |
-| **Auth** | Bearer token required |
+| **Auth** | `X-API-KEY` + Bearer token required |
 
 **Query parameters:**
 
@@ -657,7 +661,7 @@ Company users create and list vacancies for their own company. Each vacancy can 
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/company/vacancies` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Returns all vacancies for the authenticated user’s company.
 
@@ -701,7 +705,7 @@ Returns all vacancies for the authenticated user’s company.
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/company/vacancies` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 **Request body:**
 ```json
@@ -748,7 +752,7 @@ Returns all vacancies for the authenticated user’s company.
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/company/vacancies/{id}` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Returns a single vacancy. The vacancy must belong to the authenticated user's company; otherwise **404** is returned.
 
@@ -763,7 +767,7 @@ Returns a single vacancy. The vacancy must belong to the authenticated user's co
 |---|---|
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/company/vacancies/{id}` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Update vacancy fields and/or replace its tags. Only include fields you want to change. To update tags, send a `tags` array (same format as [Create vacancy](#create-vacancy)); existing requirements are replaced. Omit `tags` to leave tags unchanged.
 
@@ -807,7 +811,7 @@ Update vacancy fields and/or replace its tags. Only include fields you want to c
 |---|---|
 | **Method** | `DELETE` |
 | **Path** | `/company/vacancies/{id}` |
-| **Auth** | Bearer token + company role |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
 
 Deletes the vacancy. The vacancy must belong to the authenticated user's company; otherwise **404** is returned.
 
@@ -840,7 +844,7 @@ Students can view and update their own profile (user fields + student_profile).
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/student/profile` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 Returns the authenticated student's full profile including experiences, tags, languages, and preferences.
 
@@ -886,7 +890,7 @@ Returns the authenticated student's full profile including experiences, tags, la
 |---|---|
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/student/profile` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 Update user fields and/or student profile fields. Only include fields you want to change.
 
@@ -942,7 +946,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/student/{student}` |
-| **Auth** | Bearer token + coordinator or company role |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator or company role |
 
 **URL parameters:**
 - `student` (number): The student's user ID.
@@ -1027,7 +1031,7 @@ Coordinators and company users can view any student's full profile including exp
     }
   },
   "links": {
-    "self": "/api/v1/student/1"
+    "self": "/api/v2/student/1"
   }
 }
 ```
@@ -1047,7 +1051,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/student/preferences` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Success (200):**
 ```json
@@ -1073,7 +1077,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/student/preferences` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Request body (all optional):**
 ```json
@@ -1110,7 +1114,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/student/experiences` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Success (200):**
 ```json
@@ -1137,7 +1141,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/student/experiences` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Request body:**
 ```json
@@ -1168,7 +1172,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `PUT` or `PATCH` |
 | **Path** | `/student/experiences/{id}` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Request body (all optional):**
 ```json
@@ -1192,7 +1196,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `DELETE` |
 | **Path** | `/student/experiences/{id}` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Success (200):** `{ "message": "Experience deleted successfully." }`  
 **Error (404):** Experience not found or not owned by you.
@@ -1209,7 +1213,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/student/languages` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Success (200):**
 ```json
@@ -1235,7 +1239,7 @@ Coordinators and company users can view any student's full profile including exp
 |---|---|
 | **Method** | `PUT` |
 | **Path** | `/student/languages` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 Replaces all languages for the student. Send the complete list of languages.
 
@@ -1270,7 +1274,7 @@ Replaces all languages for the student. Send the complete list of languages.
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/student/tags` |
-| **Auth** | Bearer token + student role |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
 
 **Success (200):**
 ```json
@@ -1362,7 +1366,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
       "tag": { "id": 1, "name": "PHP", "tag_type": "skill" }
     }
   ],
-  "links": { "self": "https://<your-api-host>/api/v1/student/tags" }
+  "links": { "self": "https://<your-api-host>/api/v2/student/tags" }
 }
 ```
 
@@ -1379,7 +1383,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
 
 1. **Login as a student** to get a JWT token:
    ```
-   POST /api/v1/auth/login
+   POST /api/v2/auth/login
    Content-Type: application/json
    
    { "email": "student@example.com", "password": "password123" }
@@ -1387,7 +1391,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
 
 2. **Sync tags** with the token:
    ```
-   PUT /api/v1/student/tags
+   PUT /api/v2/student/tags
    Authorization: Bearer <your-jwt-token>
    Content-Type: application/json
    Accept: application/json
@@ -1403,7 +1407,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
 
 3. **Verify** by listing tags:
    ```
-   GET /api/v1/student/tags
+   GET /api/v2/student/tags
    Authorization: Bearer <your-jwt-token>
    Accept: application/json
    ```
@@ -1424,7 +1428,7 @@ These endpoints return only **active** (coordinator-approved) companies and thei
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/companies` |
-| **Auth** | None |
+| **Auth** | `X-API-KEY` required |
 
 **Success (200):** `{ "data": [ <company objects> ], "links": { "self": "..." } }` ” only companies with `is_active: true`.
 
@@ -1436,7 +1440,7 @@ These endpoints return only **active** (coordinator-approved) companies and thei
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/vacancies` |
-| **Auth** | None |
+| **Auth** | `X-API-KEY` required |
 
 **Query parameters:** `per_page` (number, default 15) for pagination.
 
@@ -1921,7 +1925,7 @@ Create a new assignment between a student and a coordinator. You can assign to *
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/coordinator/users/{student_id}/assignments` |
-| **Auth** | Bearer token + coordinator role |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
 
 **Request body (JSON):**
 
@@ -1975,7 +1979,7 @@ Marks the latest active assignment between a student and a coordinator as **unas
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/coordinator/users/{student_id}/unassignments` |
-| **Auth** | Bearer token + coordinator role |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
 
 **Request body (JSON):**
 
@@ -2033,7 +2037,7 @@ Coordinators can list all vacancies across companies with optional filtering.
 |---|---|
 | **Method** | `GET` |
 | **Path** | `/coordinator/vacancies` |
-| **Auth** | Bearer token + coordinator role |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
 
 **Query parameters:**
 
@@ -2108,7 +2112,7 @@ Use the same Bearer token for all requests in steps 3–5.
 
 ## Testing with Postman
 
-Use **Base URL** `http://localhost/api/v1` (or `http://127.0.0.1:8000/api/v1` if using `php artisan serve`). Set header **Content-Type:** `application/json` on all requests.
+Use **Base URL** `http://localhost/api/v2` (or `http://127.0.0.1:8000/api/v2` if using `php artisan serve`). Set header **Content-Type:** `application/json` on all requests.
 php -S 127.0.0.1:8001 -t public
 
 ### 1. Get a company user token
