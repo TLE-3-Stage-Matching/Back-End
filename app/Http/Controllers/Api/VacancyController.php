@@ -16,11 +16,14 @@ class VacancyController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Vacancy::query()
-            ->where('is_active', true)
             ->whereHas('company', fn ($q) => $q->active());
 
         $perPage = $request->integer('per_page', 15);
-        $vacancies = $query->with('company:id,name')->latest()->paginate($perPage);
+
+        $vacancies = $query->with([
+            'company:id,name',
+            'vacancyRequirements.tag'
+        ])->latest()->paginate($perPage);
 
         $items = $vacancies->getCollection();
 
