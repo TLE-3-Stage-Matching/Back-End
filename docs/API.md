@@ -54,6 +54,7 @@ For conventions on updating this doc and adding new API functionality, see [CONV
   - [Companies (coordinator)](#companies-coordinator)
   - [Users (coordinator)](#users-coordinator)
   - [Vacancies (coordinator)](#vacancies-coordinator)
+  - [Student–coordinator assignments](#studentcoordinator-assignments-coordinator)
 - [Public data (no auth)](#public-data-no-auth)
   - [List active companies](#list-active-companies)
   - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
@@ -1602,6 +1603,7 @@ Manage **student** and **company** users. For company users, the company must ex
 | search | string | — | Search in first name, last name, or email (partial match) |
 | per_page | number | 15 | Pagination size |
 | active_companies_only | boolean | false | If `1` or `true`, only return students and company users whose company is active (useful when listing users for display). Omit to see all users for management. |
+| assigned_to_me | boolean | false | If `1` or `true` **and** `role=student`, only return students currently assigned to the logged-in coordinator. |
 
 **Example:** `GET /coordinator/users?role=student&search=jan&per_page=10`
 **Example:** `GET /coordinator/users?role=student&per_page=10`  
@@ -1873,6 +1875,122 @@ Omit `password` or send `null` to leave it unchanged.
 
 **Success (200):** `{ "message": "User deleted successfully." }`
 **Error (404):** `{ "message": "User not found." }`
+
+[↑ Back to index](#index)
+
+---
+
+## Student–coordinator assignments (coordinator)
+
+Coordinators can manage which students are assigned to which coordinators.  
+Assignments are stored in the `student_coordinator_assignments` table and are **historical**: when a student is unassigned, the row is kept but `unassigned_at` is set.  
+The `GET /coordinator/users?role=student&assigned_to_me=1` filter only considers **active** assignments (`unassigned_at` is `null`).
+
+### Assign student to a coordinator
+
+Create a new assignment between a student and a coordinator. You can assign to **yourself** or to **another coordinator**.
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/coordinator/users/{student_id}/assignments` |
+| **Auth** | Bearer token + coordinator role |
+
+**Request body (JSON):**
+
+```json
+{
+  "coordinator_user_id": 5,
+  "note": "Moving this student to another coordinator."
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| coordinator_user_id | number | Yes | Must exist in `users` and have role `coordinator`. |
+| note | string | No | Optional internal note stored on the assignment. |
+
+**Behavior:**
+
+- Fails with `422` if the path user is **not** a student.
+- Fails with `422` if `coordinator_user_id` is not a coordinator.
+- Creates a new `student_coordinator_assignments` row with:
+  - `student_user_id = {student_id}`
+  - `coordinator_user_id = coordinator_user_id`
+  - `assigned_by_user_id = <logged-in coordinator id>`
+  - `assigned_at = now`
+  - `unassigned_at = null`
+
+**Success (201):**
+
+```json
+{
+  "message": "Coordinator assigned to student successfully.",
+  "data": {
+    "id": 1,
+    "student_user_id": 10,
+    "coordinator_user_id": 5,
+    "assigned_by_user_id": 3,
+    "assigned_at": "2025-03-10T12:00:00+00:00",
+    "unassigned_at": null,
+    "note": "Moving this student to another coordinator."
+  }
+}
+```
+
+---
+
+### Unassign student from a coordinator
+
+Marks the latest active assignment between a student and a coordinator as **unassigned** by setting `unassigned_at`.
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/coordinator/users/{student_id}/unassignments` |
+| **Auth** | Bearer token + coordinator role |
+
+**Request body (JSON):**
+
+```json
+{
+  "coordinator_user_id": 5,
+  "note": "Student graduated."
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| coordinator_user_id | number | No | If omitted, defaults to the logged-in coordinator’s user id. Must exist in `users` if provided. |
+| note | string | No | Optional note to update on the assignment. |
+
+**Behavior:**
+
+- Fails with `422` if the path user is **not** a student.
+- Looks up the most recent assignment for:
+  - `student_user_id = {student_id}`
+  - `coordinator_user_id = coordinator_user_id` (or current coordinator if omitted)
+  - `unassigned_at IS NULL`
+- If no active assignment is found, returns **404**:
+  - `{ "message": "Active assignment not found." }`
+- Otherwise sets `unassigned_at = now` and, if provided, updates `note`.
+
+**Success (200):**
+
+```json
+{
+  "message": "Student unassigned from coordinator successfully.",
+  "data": {
+    "id": 1,
+    "student_user_id": 10,
+    "coordinator_user_id": 5,
+    "assigned_by_user_id": 3,
+    "assigned_at": "2025-03-10T12:00:00+00:00",
+    "unassigned_at": "2025-03-11T09:00:00+00:00",
+    "note": "Student graduated."
+  }
+}
+```
 
 [↑ Back to index](#index)
 
