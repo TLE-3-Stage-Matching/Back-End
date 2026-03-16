@@ -1,0 +1,243 @@
+{
+  "info": {
+    "name": "TLE3 Matching Algorithm Testing",
+    "description": "Complete test suite for the vacancy matching algorithm - includes company registration, vacancy creation, and student matching",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Company Registration & Auth",
+      "item": [
+        {
+          "name": "Register as Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"name\": \"TechCorp Solutions\",\n    \"industry_tag_id\": null,\n    \"email\": \"company@techcorp.com\",\n    \"phone\": \"+31612345678\",\n    \"size_category\": \"medium\",\n    \"description\": \"Leading software development company\"\n  },\n  \"user\": {\n    \"email\": \"company-user@techcorp.com\",\n    \"first_name\": \"Jan\",\n    \"last_name\": \"Jansen\",\n    \"phone\": \"+31612345679\"\n  },\n  \"password\": \"password123\",\n  \"location\": {\n    \"address_line\": \"Tech Street 123\",\n    \"postal_code\": \"1234AB\",\n    \"city\": \"Amsterdam\",\n    \"country\": \"Netherlands\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/v1/auth/register/company",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "auth", "register", "company"]
+            }
+          }
+        },
+        {
+          "name": "Login as Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"company-user@techcorp.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/v1/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Company Actions (Authenticated)",
+      "item": [
+        {
+          "name": "Get Company Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/company",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "company"]
+            }
+          }
+        },
+        {
+          "name": "Get All Available Tags",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/tags",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "tags"]
+            }
+          }
+        },
+        {
+          "name": "Create Vacancy - Senior React Developer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location_id\": 1,\n  \"title\": \"Senior React Developer\",\n  \"hours_per_week\": 40,\n  \"description\": \"We're hiring a Senior React Developer to join our growing team. You'll work on scalable frontend applications with modern tech stack.\",\n  \"offer_text\": \"Competitive salary, flexible hours, health insurance, home office, professional development budget, unlimited learning\",\n  \"expectations_text\": \"5+ years React experience, TypeScript knowledge, modern CSS (Tailwind/SCSS), REST API integration, git proficiency, problem-solving mindset\",\n  \"tags\": [\n    {\n      \"id\": null,\n      \"name\": \"React\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 5\n    },\n    {\n      \"id\": null,\n      \"name\": \"TypeScript\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 4\n    },\n    {\n      \"id\": null,\n      \"name\": \"Tailwind CSS\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"nice_to_have\",\n      \"importance\": 3\n    },\n    {\n      \"id\": null,\n      \"name\": \"Problem Solver\",\n      \"tag_type\": \"trait\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 4\n    },\n    {\n      \"id\": null,\n      \"name\": \"Team Player\",\n      \"tag_type\": \"trait\",\n      \"requirement_type\": \"nice_to_have\",\n      \"importance\": 3\n    },\n    {\n      \"id\": null,\n      \"name\": \"Frontend Development\",\n      \"tag_type\": \"industry\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/v1/company/vacancies",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "company", "vacancies"]
+            }
+          }
+        },
+        {
+          "name": "Create Vacancy - Python Backend Developer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location_id\": 1,\n  \"title\": \"Python Backend Developer\",\n  \"hours_per_week\": 40,\n  \"description\": \"Join our backend team and build robust APIs with Python. Work with Django/Flask and modern cloud infrastructure.\",\n  \"offer_text\": \"Competitive salary, flexible hours, home office, health benefits, learning budget\",\n  \"expectations_text\": \"3+ years Python, Django/Flask experience, REST API design, database optimization, Docker and CI/CD knowledge\",\n  \"tags\": [\n    {\n      \"id\": null,\n      \"name\": \"Python\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 5\n    },\n    {\n      \"id\": null,\n      \"name\": \"Django\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 4\n    },\n    {\n      \"id\": null,\n      \"name\": \"PostgreSQL\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 3\n    },\n    {\n      \"id\": null,\n      \"name\": \"Docker\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"nice_to_have\",\n      \"importance\": 3\n    },\n    {\n      \"id\": null,\n      \"name\": \"REST API\",\n      \"tag_type\": \"skill\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 4\n    },\n    {\n      \"id\": null,\n      \"name\": \"Problem Solver\",\n      \"tag_type\": \"trait\",\n      \"requirement_type\": \"must_have\",\n      \"importance\": 4\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/v1/company/vacancies",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "company", "vacancies"]
+            }
+          }
+        },
+        {
+          "name": "List Company Vacancies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/company/vacancies",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "company", "vacancies"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Student Testing (Different Login)",
+      "item": [
+        {
+          "name": "STUDENT: Login as Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/v1/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "STUDENT: View Top 3 Matching Vacancies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/student/vacancies/top-matches",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "student", "vacancies", "top-matches"]
+            }
+          }
+        },
+        {
+          "name": "STUDENT: View All Vacancies with Scores & Breakdown",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/student/vacancies/with-scores",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "v1", "student", "vacancies", "with-scores"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\PublicCompanyController;
 use App\Http\Controllers\Api\StageCoordinatorUserController;
 use App\Http\Controllers\Api\Student\StudentMatchScoreController;
 use App\Http\Controllers\Api\Student\StudentProfileController;
+use App\Http\Controllers\Api\Student\StudentVacancyMatchController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\VacancyController;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +78,11 @@ Route::prefix('v1')->group(function () {
             // Tags/Skills (sync)
             Route::get('student/tags', [StudentProfileController::class, 'listTags']);
             Route::put('student/tags', [StudentProfileController::class, 'syncTags']);
+
+            // Vacancy matching (tag-based scoring)
+            Route::get('student/vacancies/top-matches', [StudentVacancyMatchController::class, 'topMatches']);
+            Route::get('student/vacancies/with-scores', [StudentVacancyMatchController::class, 'withScores']);
+            Route::get('student/vacancies/{vacancy}/detail', [StudentVacancyMatchController::class, 'detail']);
 
             // Match scores: list vacancies with scores (sorted by score), subscores + explanations
             Route::get('student/vacancies-with-scores', [StudentMatchScoreController::class, 'vacanciesWithScores']);

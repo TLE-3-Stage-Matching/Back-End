@@ -190,7 +190,6 @@ class StudentVacancyTagMatchService
 
     /**
      * Vacancies from active companies with scores and subscores, sorted by score descending, paginated.
-     * If the student has a major tag, only vacancies that have that major in requirements are included.
      * If $industryTagId is set, only vacancies from companies with that industry_tag_id are included.
      */
     public function vacanciesWithScoresForStudent(int $studentUserId, int $perPage = 15, int $page = 1, ?int $industryTagId = null): LengthAwarePaginator
@@ -205,10 +204,6 @@ class StudentVacancyTagMatchService
             ->with(['company:id,name,industry_tag_id', 'vacancyRequirements.tag:id,name,tag_type']);
 
         $studentItems = $this->getStudentTagItems($studentUserId);
-        $studentMajorTagId = $this->getStudentMajorTagId($studentItems);
-        if ($studentMajorTagId !== null) {
-            $vacancyQuery->whereHas('vacancyRequirements', fn ($q) => $q->where('tag_id', $studentMajorTagId));
-        }
 
         $allVacancies = $vacancyQuery->get();
 

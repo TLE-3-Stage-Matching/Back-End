@@ -26,7 +26,7 @@ class SyncStudentTagsRequest extends FormRequest
             'tags' => ['required', 'array'],
             'tags.*.tag_id' => ['required', 'integer', 'exists:tags,id'],
             'tags.*.is_active' => ['nullable', 'boolean'],
-            'tags.*.weight' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'tags.*.weight' => ['nullable', 'integer', 'min:1', 'max:5'],
         ];
     }
 
