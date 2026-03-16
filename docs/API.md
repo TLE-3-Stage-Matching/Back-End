@@ -57,7 +57,7 @@ updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacan
     - [Companies (coordinator)](#companies-coordinator)
     - [Users (coordinator)](#users-coordinator)
     - [Vacancies (coordinator)](#vacancies-coordinator)
-        - [Add comment to vacancy](#add-comment-to-vacancy)
+    - [Add comment to vacancy](#add-comment-to-vacancy)
     - [Student–coordinator assignments](#studentcoordinator-assignments-coordinator)
 - [Public data (no auth)](#public-data-no-auth)
     - [List active companies](#list-active-companies)
@@ -862,6 +862,114 @@ Deletes the vacancy. The vacancy must belong to the authenticated user's company
 **Success (204):** No content.  
 **Error (404):** Vacancy not found or not owned by your company.
 
+### List comments on vacancy
+
+|            |                                         |
+|------------|-----------------------------------------|
+| **Method** | `GET`                                   |
+| **Path**   | `/company/vacancies/{vacancy}/comments` |
+| **Auth**   | Bearer token + company role             |
+
+**URL parameters:**
+
+- `vacancy` (number): The vacancy ID.
+
+**Success (200):**
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "vacancy_id": 1,
+            "author_user_id": 2,
+            "comment": "Looking for a candidate with strong PHP skills.",
+            "created_at": "2024-01-01T12:00:00.000000Z",
+            "updated_at": "2024-01-01T12:00:00.000000Z",
+            "author": {
+                "id": 2,
+                "first_name": "Alex",
+                "last_name": "Coordinator"
+            }
+        }
+    ],
+    "links": {
+        "self": "/api/v1/company/vacancies/1/comments"
+    }
+}
+```
+
+**Error (403):** `{ "message": "Forbidden" }` — Vacancy not owned by your company.
+
+---
+
+### Update vacancy comment
+
+|            |                                         |
+|------------|-----------------------------------------|
+| **Method** | `PATCH` or `PUT`                        |
+| **Path**   | `/company/vacancies/comments/{comment}` |
+| **Auth**   | Bearer token + company role             |
+
+**URL parameters:**
+
+- `comment` (number): The comment ID.
+
+**Request body:**
+
+```json
+{
+    "comment": "Updated comment text from company user."
+}
+```
+
+| Field   | Type   | Required | Notes    |
+|---------|--------|----------|----------|
+| comment | string | Yes      | Max 1000 |
+
+**Success (200):**
+
+```json
+{
+    "message": "Comment updated successfully.",
+    "data": {
+        "id": 1,
+        "vacancy_id": 1,
+        "author_user_id": 2,
+        "comment": "Updated comment text from company user.",
+        "created_at": "2024-01-01T12:00:00.000000Z",
+        "updated_at": "2024-01-02T13:00:00.000000Z"
+    },
+    "links": {
+        "self": "/api/v1/company/vacancies/comments/1"
+    }
+}
+```
+
+**Error (403):** `{ "message": "Forbidden" }` — Comment does not belong to a vacancy of your company.
+**Error (404):** `{ "message": "Comment not found." }`
+**Error (422):** Validation error.
+
+---
+
+### Delete vacancy comment
+
+|            |                                         |
+|------------|-----------------------------------------|
+| **Method** | `DELETE`                                |
+| **Path**   | `/company/vacancies/comments/{comment}` |
+| **Auth**   | Bearer token + company role             |
+
+**URL parameters:**
+
+- `comment` (number): The comment ID.
+
+**Success (200):**
+`{ "message": "Comment deleted successfully.", "links": { "self": "/api/v1/company/vacancies/comments/1" } }`
+
+**Error (403):** `{ "message": "Forbidden" }` — Comment does not belong to a vacancy of your company.
+**Error (404):** `{ "message": "Comment not found." }`
+
 [↑ Back to index](#index)
 
 ---
@@ -871,7 +979,7 @@ Deletes the vacancy. The vacancy must belong to the authenticated user's company
 All routes below require:
 
 1. **Valid JWT** in `Authorization: Bearer <token>`.
-2. **Logged-in user role = student.**  
+2. **Logged-in user role = student.**
    Otherwise you get **403** (e.g. "Forbidden. Student role required.").
 
 [↑ Back to index](#index)
@@ -995,7 +1103,7 @@ Update user fields and/or student profile fields. Only include fields you want t
 
 ### View student profile (by ID)
 
-**Allowed roles:** Coordinator, Company user  
+**Allowed roles:** Coordinator, Company user
 Coordinators and company users can view any student's full profile including experiences, tags, languages, and
 preferences.
 
@@ -1095,7 +1203,7 @@ preferences.
 }
 ```
 
-**Error (403):** `{ "message": "Unauthorized" }` – User is not a coordinator or company user.  
+**Error (403):** `{ "message": "Unauthorized" }` – User is not a coordinator or company user.
 **Error (404):** `{ "message": "User is not a student" }` – The specified user exists but is not a student.
 
 [↑ Back to index](#index)
@@ -1257,7 +1365,7 @@ preferences.
 }
 ```
 
-**Success (200):** `{ "message": "Experience updated successfully.", "data": <experience>, "links": {...} }`  
+**Success (200):** `{ "message": "Experience updated successfully.", "data": <experience>, "links": {...} }`
 **Error (404):** Experience not found or not owned by you.
 
 ---
@@ -1270,7 +1378,7 @@ preferences.
 | **Path**   | `/student/experiences/{id}` |
 | **Auth**   | Bearer token + student role |
 
-**Success (200):** `{ "message": "Experience deleted successfully." }`  
+**Success (200):** `{ "message": "Experience deleted successfully." }`
 **Error (404):** Experience not found or not owned by you.
 
 [↑ Back to index](#index)
@@ -1526,7 +1634,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
    ```
    POST /api/v1/auth/login
    Content-Type: application/json
-   
+
    { "email": "student@example.com", "password": "password123" }
    ```
 
@@ -1536,7 +1644,7 @@ In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in
    Authorization: Bearer <your-jwt-token>
    Content-Type: application/json
    Accept: application/json
-   
+
    {
      "tags": [
        { "tag_id": 1, "is_active": true, "weight": 90 },
@@ -1589,8 +1697,7 @@ not appear here until a stage coordinator sets their `is_active` to `true`.
 **Query parameters:** `per_page` (number, default 15) for pagination.
 
 **Success (200):**
-`{ "data": [ <vacancy objects> ], "meta": { "current_page", "last_page", "per_page", "total" }, "links": { "self": "..." } }` —
-only vacancies belonging to active companies.
+
 ```json
 {
     "data": [
@@ -1691,7 +1798,9 @@ only vacancies belonging to active companies.
 }
 ```
 
-Note: The public `/vacancies` response includes the vacancy's `is_active` flag. Each `vacancy_requirements` item includes `created_at`/`updated_at` and the nested `tag` object contains `is_active` and timestamps — the example above reflects what Postman returns from the API for a vacancy with multiple skill requirements.
+Note: The public `/vacancies` response includes the vacancy's `is_active` flag. Each `vacancy_requirements` item
+includes `created_at`/`updated_at` and the nested `tag` object contains `is_active` and timestamps — the example above
+reflects what Postman returns from the API for a vacancy with multiple skill requirements.
 
 ---
 
@@ -1700,7 +1809,7 @@ Note: The public `/vacancies` response includes the vacancy's `is_active` flag. 
 All routes below require:
 
 1. **Valid JWT** in `Authorization: Bearer <token>`.
-2. **Logged-in user role = coordinator.**  
+2. **Logged-in user role = coordinator.**
    Otherwise you get **403** (e.g. “Forbidden. Coordinator role required.” or “This action is unauthorized.”).
 
 [↑ Back to index](#index)
@@ -1761,7 +1870,6 @@ Create and manage companies first; then add company users by `company_id`.
 }
 ```
 
-
 ---
 
 ### Create company
@@ -1802,7 +1910,7 @@ Create and manage companies first; then add company users by `company_id`.
 | description     | string  | No       |                      |
 | is_active       | boolean | No       | Defaults to `true`   |
 
-**Success (201):** `{ "data": <company object> }`  
+**Success (201):** `{ "data": <company object> }`
 Use `data.id` as `company_id` when creating a company user.
 
 ---
@@ -1814,7 +1922,7 @@ Use `data.id` as `company_id` when creating a company user.
 | **Method** | `GET`                         |
 | **Path**   | `/coordinator/companies/{id}` |
 
-**Success (200):** `{ "data": <company>, "links": {...} }`  
+**Success (200):** `{ "data": <company>, "links": {...} }`
 **Error (404):** if company does not exist.
 
 ---
@@ -1843,7 +1951,8 @@ Same fields as [Create company](#create-company); all optional. Only send fields
 
 **Approving self-registered companies:** Set `is_active` to `true` to approve a company. Until then, that company and
 its users/vacancies are excluded from [List active companies](#list-active-companies)
-and [List vacancies](#list-vacancies-active-companies-only).
+and [List vacancies](#list-vacancies-active-companies-only), and only their users when using
+`GET /coordinator/users?active_companies_only=1`.
 
 **Success (200):** `{ "data": <updated company> }`
 
@@ -1885,7 +1994,7 @@ Manage **student** and **company** users. For company users, the company must ex
 | assigned_to_me        | boolean | false   | If `1` or `true` **and** `role=student`, only return students currently assigned to the logged-in coordinator.                                                  |
 
 **Example:** `GET /coordinator/users?role=student&search=jan&per_page=10`
-**Example:** `GET /coordinator/users?role=student&per_page=10`  
+**Example:** `GET /coordinator/users?role=student&per_page=10`
 **Example (only active companies’ users):** `GET /coordinator/users?active_companies_only=1`
 
 <details>
@@ -2181,7 +2290,7 @@ Only include fields to update.
 }
 ```
 
-For **company** users you can also send `company_id` and `job_title`.  
+For **company** users you can also send `company_id` and `job_title`.
 Omit `password` or send `null` to leave it unchanged.
 
 </details>
@@ -2197,8 +2306,10 @@ Omit `password` or send `null` to leave it unchanged.
 | **Method** | `DELETE`                  |
 | **Path**   | `/coordinator/users/{id}` |
 
-Only **students** can be deleted. Attempting to delete a coordinator or company user returns **403**.  
-Deleting a student also **cascades** to their related data (profile, experiences, tags, languages, preferences, favorites, saved vacancies, messages, conversations, and other student-specific records), either removing those rows or nulling references where configured.
+Only **students** can be deleted. Attempting to delete a coordinator or company user returns **403**.
+Deleting a student also **cascades** to their related data (profile, experiences, tags, languages, preferences,
+favorites, saved vacancies, messages, conversations, and other student-specific records), either removing those rows or
+nulling references where configured.
 
 **Success (200):** `{ "message": "User deleted successfully." }`
 **Error (403):** `{ "message": "Alleen studenten kunnen verwijderd worden" }`
@@ -2210,9 +2321,9 @@ Deleting a student also **cascades** to their related data (profile, experiences
 
 ## Student–coordinator assignments (coordinator)
 
-Coordinators can manage which students are assigned to which coordinators.  
+Coordinators can manage which students are assigned to which coordinators.
 Assignments are stored in the `student_coordinator_assignments` table and are **historical**: when a student is
-unassigned, the row is kept but `unassigned_at` is set.  
+unassigned, the row is kept but `unassigned_at` is set.
 The `GET /coordinator/users?role=student&assigned_to_me=1` filter only considers **active** assignments (`unassigned_at`
 is `null`).
 
@@ -2561,3 +2672,4 @@ Use **Authorization: Bearer** with the company user token for all requests below
 | 422  | Validation error (body in response)     |
 
 [↑ Back to index](#index)
+
