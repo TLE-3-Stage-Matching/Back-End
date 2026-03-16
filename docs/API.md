@@ -907,6 +907,110 @@ Update user fields and/or student profile fields. Only include fields you want t
 
 **Success (200):** `{ "message": "Profile updated successfully.", "data": <full profile>, "links": {...} }`
 
+---
+
+### View student profile (by ID)
+
+**Allowed roles:** Coordinator, Company user  
+Coordinators and company users can view any student's full profile including experiences, tags, languages, and preferences.
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/{student}` |
+| **Auth** | Bearer token + coordinator or company role |
+
+**URL parameters:**
+- `student` (number): The student's user ID.
+
+**Success (200):**
+```json
+{
+  "data": {
+    "id": 1,
+    "first_name": "John",
+    "middle_name": null,
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "profile_photo_url": null,
+    "student_profile": {
+      "id": 1,
+      "user_id": 1,
+      "headline": "Junior Developer",
+      "bio": "Passionate about coding...",
+      "address_line": "Main Street 1",
+      "postal_code": "1234AB",
+      "city": "Amsterdam",
+      "country": "Netherlands",
+      "searching_status": "active",
+      "exclude_demographics": false,
+      "exclude_location": false
+    },
+    "experiences": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "title": "Intern",
+        "company_name": "Acme Corp",
+        "start_date": "2024-01-01",
+        "end_date": "2024-06-30",
+        "description": "Worked on backend systems"
+      }
+    ],
+    "tags": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "tag_id": 5,
+        "weight": 3,
+        "tag": {
+          "id": 5,
+          "name": "PHP",
+          "tag_type": "skill"
+        }
+      }
+    ],
+    "languages": [
+      {
+        "id": 1,
+        "user_id": 1,
+        "language_id": 1,
+        "language_level_id": 2,
+        "language": {
+          "id": 1,
+          "name": "English"
+        },
+        "language_level": {
+          "id": 2,
+          "name": "Intermediate"
+        }
+      }
+    ],
+    "preferences": {
+      "id": 1,
+      "user_id": 1,
+      "desired_role_tag_id": 2,
+      "hours_per_week_min": 32,
+      "hours_per_week_max": 40,
+      "max_distance_km": 50,
+      "has_drivers_license": true,
+      "notes": "Prefer remote work",
+      "desired_role_tag": {
+        "id": 2,
+        "name": "Backend Developer",
+        "tag_type": "role"
+      }
+    }
+  },
+  "links": {
+    "self": "/api/v1/student/1"
+  }
+}
+```
+
+**Error (403):** `{ "message": "Unauthorized" }` – User is not a coordinator or company user.  
+**Error (404):** `{ "message": "User is not a student" }` – The specified user exists but is not a student.
+
 [↑ Back to index](#index)
 
 ---
