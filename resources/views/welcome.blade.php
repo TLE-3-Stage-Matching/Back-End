@@ -142,6 +142,39 @@
         @media (prefers-color-scheme: dark) {
             #sidebar-list a.sidebar-active { background: #262626; }
         }
+        #sidebar-list .sidebar-section-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            width: 100%;
+            padding: 3px 0;
+            margin: 0;
+            border: none;
+            background: none;
+            font: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: inherit;
+            cursor: pointer;
+            text-align: left;
+        }
+        #sidebar-list .sidebar-section-toggle:hover { opacity: 0.9; }
+        #sidebar-list .sidebar-section-toggle .sidebar-chevron {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            transition: transform 0.15s ease;
+        }
+        #sidebar-list .sidebar-section-collapsed .sidebar-chevron {
+            transform: rotate(-90deg);
+        }
+        #sidebar-list .sidebar-section-children {
+            list-style: none;
+            padding-left: 0;
+            margin: 0 0 4px 0;
+        }
+        #sidebar-list .sidebar-section-collapsed .sidebar-section-children {
+            display: none;
+        }
         @media (max-width: 900px) {
             #api-docs {
                 flex-direction: column;
@@ -445,28 +478,98 @@
             var v1Headings = collectHeadings(v1Container, 'v1-');
             var v2Headings = collectHeadings(v2Container, 'v2-');
 
+            function isOnlyEndpointsHeading(text) {
+                return typeof text === 'string' && text.indexOf('only endpoints') !== -1;
+            }
+
+            function groupHeadingsForSidebar(headings) {
+                var groups = [];
+                var i = 0;
+                while (i < headings.length) {
+                    var h = headings[i];
+                    if (h.level === 2 && isOnlyEndpointsHeading(h.text)) {
+                        var children = [];
+                        i++;
+                        while (i < headings.length && !(headings[i].level === 2 && isOnlyEndpointsHeading(headings[i].text))) {
+                            children.push(headings[i]);
+                            i++;
+                        }
+                        groups.push({ type: 'section', title: h.text, id: h.id, children: children });
+                    } else {
+                        groups.push({ type: 'item', heading: h });
+                        i++;
+                    }
+                }
+                return groups;
+            }
+
             function renderSidebar(version) {
                 if (!sidebar || !sidebarList) return;
                 var headings = version === 'v2' ? v2Headings : v1Headings;
+                var groups = groupHeadingsForSidebar(headings);
                 sidebarList.innerHTML = '';
-                headings.forEach(function (h) {
-                    var li = document.createElement('li');
-                    li.style.marginBottom = '4px';
-                    var a = document.createElement('a');
-                    a.href = '#' + h.id.replace(/^v[12]-/, '');
-                    a.textContent = h.text;
-                    a.style.display = 'block';
-                    a.style.padding = '3px 0';
-                    if (h.level === 2) {
-                        a.style.paddingLeft = '0';
-                        a.style.fontSize = '0.9rem';
-                        a.style.fontWeight = '600';
+                groups.forEach(function (g) {
+                    if (g.type === 'item') {
+                        var h = g.heading;
+                        var li = document.createElement('li');
+                        li.style.marginBottom = '4px';
+                        var a = document.createElement('a');
+                        a.href = '#' + h.id.replace(/^v[12]-/, '');
+                        a.textContent = h.text;
+                        a.style.display = 'block';
+                        a.style.padding = '3px 0';
+                        if (h.level === 2) {
+                            a.style.paddingLeft = '0';
+                            a.style.fontSize = '0.9rem';
+                            a.style.fontWeight = '600';
+                        } else {
+                            a.style.paddingLeft = '14px';
+                            a.style.fontSize = '0.82rem';
+                        }
+                        li.appendChild(a);
+                        sidebarList.appendChild(li);
                     } else {
-                        a.style.paddingLeft = '14px';
-                        a.style.fontSize = '0.82rem';
+                        var li = document.createElement('li');
+                        li.style.marginBottom = '4px';
+                        li.className = 'sidebar-collapsible-section sidebar-section-collapsed';
+                        var toggle = document.createElement('button');
+                        toggle.type = 'button';
+                        toggle.className = 'sidebar-section-toggle';
+                        toggle.setAttribute('aria-expanded', 'false');
+                        var chevron = document.createElement('span');
+                        chevron.className = 'sidebar-chevron';
+                        chevron.textContent = '\u25BC';
+                        toggle.appendChild(chevron);
+                        toggle.appendChild(document.createTextNode(' ' + g.title));
+                        li.appendChild(toggle);
+                        var childUl = document.createElement('ul');
+                        childUl.className = 'sidebar-section-children';
+                        g.children.forEach(function (ch) {
+                            var childLi = document.createElement('li');
+                            childLi.style.marginBottom = '4px';
+                            var a = document.createElement('a');
+                            a.href = '#' + ch.id.replace(/^v[12]-/, '');
+                            a.textContent = ch.text;
+                            a.style.display = 'block';
+                            a.style.padding = '3px 0';
+                            if (ch.level === 2) {
+                                a.style.paddingLeft = '8px';
+                                a.style.fontSize = '0.9rem';
+                                a.style.fontWeight = '600';
+                            } else {
+                                a.style.paddingLeft = '14px';
+                                a.style.fontSize = '0.82rem';
+                            }
+                            childLi.appendChild(a);
+                            childUl.appendChild(childLi);
+                        });
+                        li.appendChild(childUl);
+                        sidebarList.appendChild(li);
+                        toggle.addEventListener('click', function () {
+                            var expanded = li.classList.toggle('sidebar-section-collapsed');
+                            toggle.setAttribute('aria-expanded', !expanded);
+                        });
                     }
-                    li.appendChild(a);
-                    sidebarList.appendChild(li);
                 });
                 sidebar.style.display = 'block';
             }
@@ -563,6 +666,15 @@
                     var href = (a.getAttribute('href') || '').slice(1);
                     if (href === fragment) {
                         a.classList.add('sidebar-active');
+                        var sectionChildren = a.closest('.sidebar-section-children');
+                        if (sectionChildren) {
+                            var sectionLi = sectionChildren.parentElement;
+                            if (sectionLi && sectionLi.classList.contains('sidebar-collapsible-section')) {
+                                sectionLi.classList.remove('sidebar-section-collapsed');
+                                var toggleBtn = sectionLi.querySelector('.sidebar-section-toggle');
+                                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+                            }
+                        }
                         if (sidebarListNav && sidebarListNav.scrollHeight > sidebarListNav.clientHeight) {
                             var listRect = sidebarListNav.getBoundingClientRect();
                             var linkRect = a.getBoundingClientRect();
