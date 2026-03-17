@@ -45,9 +45,9 @@ For conventions on updating this doc and adding new API functionality, see the i
 
 | Role | Capabilities |
 |------|--------------|
-| **Coordinator** | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list **vacancies with match scores** for a given student; **assign/unassign** students to coordinators; **add comments** to vacancies; list companies/users with filters. |
-| **Company user** | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB); **list/update/delete vacancy comments**. |
-| **Student** | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**; **favorite companies** (add/remove); **saved vacancies** (list/add/remove); **vacancy matching** (top-matches, with-scores, detail, vacancies-with-scores). |
+| **Coordinator** | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list **vacancies with match scores** for a given student; **assign/unassign** students to coordinators; **add comments** to vacancies; **list/approve/reject match choices**; list companies/users with filters. |
+| **Company user** | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB); **list/update/delete vacancy comments**; **list/approve/reject match choices** for own company's vacancies. |
+| **Student** | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**; **favorite companies** (add/remove); **saved vacancies** (list/add/remove); **match choices** (list, create, update note, withdraw); **vacancy matching** (top-matches, with-scores, detail, vacancies-with-scores). |
 | **Any authenticated** | List **tags** (for vacancy forms); List **languages** and **language levels**; `GET /auth/me` (company users get `company_user` and `company` loaded); **view student profile by ID** (coordinator or company role). |
 
 **Tags:** There is no standalone “create tag” endpoint. Tags are created **inline** when a company user creates or updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy’s `tags` array; the backend uses `firstOrCreate` and persists new tags to the database.
@@ -76,12 +76,14 @@ For conventions on updating this doc and adding new API functionality, see the i
   - [List language levels (v2)](#list-language-levels)
   - [Vacancies (company) (v2)](#vacancies-company)
   - [Company vacancy comments (v2)](#company-vacancy-comments-v2)
+  - [Match choices (company) (v2)](#match-choices-company-v2)
 - [Students (v2)](#students)
   - [Student-only endpoints (v2)](#student-only-endpoints)
   - [Student profile (v2)](#student-profile)
   - [View student by ID (v2)](#view-student-profile-by-id)
   - [Student favorite companies (v2)](#student-favorite-companies-v2)
   - [Student saved vacancies (v2)](#student-saved-vacancies-v2)
+  - [Student match choices (v2)](#student-match-choices-v2)
   - [Student vacancy matching (v2)](#student-vacancy-matching-v2)
   - [Student preferences (v2)](#student-preferences)
   - [Student experiences (v2)](#student-experiences)
@@ -94,6 +96,7 @@ For conventions on updating this doc and adding new API functionality, see the i
   - [Vacancies (coordinator) (v2)](#vacancies-coordinator)
   - [Student vacancies with match scores (coordinator) (v2)](#student-vacancies-with-match-scores-coordinator-v2)
   - [Add comment to vacancy (v2)](#add-comment-to-vacancy-v2)
+  - [Match choices (coordinator) (v2)](#match-choices-coordinator-v2)
   - [Student–coordinator assignments (coordinator) (v2)](#studentcoordinator-assignments-coordinator)
 - [Public data (v2)](#public-data-v2)
   - [List active companies (v2)](#list-active-companies-v2)
@@ -1042,6 +1045,120 @@ Delete a comment. The comment must belong to a vacancy of your company; otherwis
 
 ---
 
+### Match choices (company) (v2)
+
+Company users can list match choices for their company's vacancies and approve or reject them with a decision note. Only choices with status `requested` or `shortlisted` can be approved or rejected.
+
+#### List match choices (company)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/company/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
+
+Returns all match choices for vacancies belonging to the authenticated user's company. Optional query parameters: `vacancy_id`, `status`.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "student_user_id": 2,
+      "vacancy_id": 10,
+      "status": "requested",
+      "student_note": "Interested in backend focus",
+      "decided_by_user_id": null,
+      "decided_at": null,
+      "decision_note": null,
+      "created_at": "2025-03-10T12:00:00+00:00",
+      "updated_at": "2025-03-10T12:00:00+00:00",
+      "student": {
+        "id": 2,
+        "email": "student@example.com",
+        "first_name": "Jane",
+        "last_name": "Doe"
+      },
+      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5 }
+    }
+  ],
+  "links": { "self": "https://<host>/api/v2/company/match-choices" }
+}
+```
+
+</details>
+
+---
+
+#### Approve match choice (company)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/company/match-choices/{choice}/approve` |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
+
+Approve a match choice. The choice must belong to a vacancy of your company and have status `requested` or `shortlisted`. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "We would like to invite this student for an interview."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice approved.", "data": <choice with student and vacancy>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.  
+**Error (404):** Choice not found or vacancy not owned by your company.
+
+---
+
+#### Reject match choice (company)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/company/match-choices/{choice}/reject` |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
+
+Reject a match choice. Same ownership and status rules as approve. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "We have filled this position internally."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice rejected.", "data": <choice>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.  
+**Error (404):** Choice not found or vacancy not owned by your company.
+
+[↑ Back to index](#index)
+
+---
+
 ## Student-only endpoints
 
 All routes below require:
@@ -1729,6 +1846,168 @@ Remove a vacancy from the saved list (sets `removed_at`; the record is kept). Pa
 
 ---
 
+### Student match choices (v2)
+
+Students can choose a vacancy as a match choice and leave a note explaining why. One choice per student–vacancy pair. Only choices with status `requested` or `shortlisted` can be updated or withdrawn; once a coordinator or company approves or rejects, the choice is final.
+
+#### List my match choices
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Returns the authenticated student's match choices, most recent first. Optional query parameters: `status`, `vacancy_id`.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "student_user_id": 1,
+      "vacancy_id": 10,
+      "status": "requested",
+      "student_note": "Interested in backend focus",
+      "decided_by_user_id": null,
+      "decided_at": null,
+      "decision_note": null,
+      "created_at": "2025-03-10T12:00:00+00:00",
+      "updated_at": "2025-03-10T12:00:00+00:00",
+      "vacancy": {
+        "id": 10,
+        "title": "Backend developer",
+        "company_id": 5,
+        "company": { "id": 5, "name": "Acme Corp" }
+      }
+    }
+  ],
+  "links": { "self": "https://<host>/api/v2/student/match-choices" }
+}
+```
+
+</details>
+
+---
+
+#### Create match choice
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/student/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Create a choice for a vacancy with an optional student note. The vacancy must exist and belong to an active company. Only one choice per student–vacancy pair.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "vacancy_id": 10,
+  "student_note": "I chose this because of the tech stack."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| vacancy_id | number | Yes | Must exist in `vacancies`; vacancy's company must be active. |
+| student_note | string | No | Optional note explaining why the student chose this vacancy. |
+
+<details>
+<summary><strong>Success (201) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "message": "Match choice created successfully.",
+  "data": {
+    "id": 1,
+    "student_user_id": 1,
+    "vacancy_id": 10,
+    "status": "requested",
+    "student_note": "I chose this because of the tech stack.",
+    "decided_by_user_id": null,
+    "decided_at": null,
+    "decision_note": null,
+    "created_at": "2025-03-10T12:00:00+00:00",
+    "updated_at": "2025-03-10T12:00:00+00:00",
+    "vacancy": {
+      "id": 10,
+      "title": "Backend developer",
+      "company_id": 5,
+      "company": { "id": 5, "name": "Acme Corp" }
+    }
+  },
+  "links": {
+    "self": "https://<host>/api/v2/student/match-choices/1",
+    "collection": "https://<host>/api/v2/student/match-choices"
+  }
+}
+```
+
+</details>
+
+**Error (422):** Validation error; or vacancy not found / company not active; or a choice for this student and vacancy already exists.
+
+---
+
+#### Get one match choice
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/match-choices/{choice}` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Returns a single match choice. Only the owning student can access it. Path parameter `choice` is the choice ID.
+
+**Success (200):** `{ "data": <choice object with vacancy and company>, "links": {...} }`
+
+**Error (404):** `{ "message": "Match choice not found." }`
+
+---
+
+#### Update match choice (note or withdraw)
+
+| | |
+|---|---|
+| **Method** | `PUT` or `PATCH` |
+| **Path** | `/student/match-choices/{choice}` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Update the student note and/or set status to `withdrawn`. Only allowed when the choice has not yet been decided (no `decided_at`). Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "student_note": "Updated reason.",
+  "status": "withdrawn"
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| student_note | string | No | New note (optional). |
+| status | string | No | Only `"withdrawn"` allowed; withdraws the choice. |
+
+**Success (200):** `{ "message": "Match choice updated successfully.", "data": <choice>, "links": {...} }`
+
+**Error (403):** Choice already decided or not in a state that can be updated. **Error (404):** Match choice not found.
+
+[↑ Back to index](#index)
+
+---
+
 ## Student preferences
 
 ### Get student preferences
@@ -2373,10 +2652,12 @@ Manage **student** and **company** users. For company users, the company must ex
 | per_page | number | 15 | Pagination size |
 | active_companies_only | boolean | false | If `1` or `true`, only return students and company users whose company is active (useful when listing users for display). Omit to see all users for management. |
 | assigned_to_me | boolean | false | If `1` or `true` **and** `role=student`, only return students currently assigned to the logged-in coordinator. |
+| has_match_choice | boolean | false | If `1` or `true`, only return **students** that have at least one match choice (any status). Implies students only. |
 
 **Example:** `GET /coordinator/users?role=student&search=jan&per_page=10`
 **Example:** `GET /coordinator/users?role=student&per_page=10`  
 **Example (only active companies’ users):** `GET /coordinator/users?active_companies_only=1`
+**Example (students with a match choice):** `GET /coordinator/users?role=student&has_match_choice=1`
 
 <details>
 <summary><strong>Success (200) – Response body (JSON)</strong></summary>
@@ -2938,6 +3219,114 @@ Add a comment to a vacancy (visible to the company). The vacancy must exist.
 
 ---
 
+## Match choices (coordinator) (v2)
+
+Coordinators can list all match choices (with filters) and approve or reject them with a decision note. Only choices with status `requested` or `shortlisted` can be approved or rejected.
+
+#### List match choices (coordinator)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/coordinator/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
+
+Returns match choices, paginated. Optional query parameters: `student_user_id`, `vacancy_id`, `company_id`, `status`, `per_page`.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "student_user_id": 2,
+      "vacancy_id": 10,
+      "status": "requested",
+      "student_note": "Interested in backend focus",
+      "decided_by_user_id": null,
+      "decided_at": null,
+      "decision_note": null,
+      "created_at": "2025-03-10T12:00:00+00:00",
+      "updated_at": "2025-03-10T12:00:00+00:00",
+      "student": { "id": 2, "email": "student@example.com", "first_name": "Jane", "last_name": "Doe" },
+      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5, "company": { "id": 5, "name": "Acme Corp" } }
+    }
+  ],
+  "meta": { "current_page": 1, "last_page": 1, "per_page": 15, "total": 1 },
+  "links": { "self": "https://<host>/api/v2/coordinator/match-choices" }
+}
+```
+
+</details>
+
+---
+
+#### Approve match choice (coordinator)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/coordinator/match-choices/{choice}/approve` |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
+
+Approve a match choice. The choice must have status `requested` or `shortlisted`. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "Approved for placement."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice approved.", "data": <choice with student, vacancy, decided_by_user>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.
+
+---
+
+#### Reject match choice (coordinator)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/coordinator/match-choices/{choice}/reject` |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
+
+Reject a match choice. Same status rules as approve. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "Student does not meet minimum requirements for this vacancy."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice rejected.", "data": <choice>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.
+
+[↑ Back to index](#index)
+
+---
+
 ## Dev / Admin (v2)
 
 These routes do **not** require the `X-API-KEY` header; they use JWT only. Access is restricted by role (dev or admin).
@@ -3157,6 +3546,8 @@ With a student JWT and **X-API-KEY** set:
 | GET / POST | `/company/vacancies` | X-API-KEY + Bearer + company |
 | GET / PATCH / DELETE | `/company/vacancies/{id}` | X-API-KEY + Bearer + company |
 | GET / PATCH / DELETE | `/company/vacancies/{vacancy}/comments`, `.../comments/{comment}` | X-API-KEY + Bearer + company |
+| GET | `/company/match-choices` | X-API-KEY + Bearer + company |
+| PATCH | `/company/match-choices/{choice}/approve`, `.../reject` | X-API-KEY + Bearer + company |
 | GET / PATCH | `/student/profile` | X-API-KEY + Bearer + student |
 | GET / PATCH | `/student/preferences` | X-API-KEY + Bearer + student |
 | GET / POST / PATCH / DELETE | `/student/experiences`, `.../experiences/{id}` | X-API-KEY + Bearer + student |
@@ -3166,6 +3557,7 @@ With a student JWT and **X-API-KEY** set:
 | GET | `/student/vacancies/top-matches`, `.../with-scores`, `.../{vacancy}/detail` | X-API-KEY + Bearer + student |
 | GET | `/student/vacancies-with-scores` | X-API-KEY + Bearer + student |
 | GET / POST / DELETE | `/student/saved-vacancies`, `.../saved-vacancies/{vacancyId}` | X-API-KEY + Bearer + student |
+| GET / POST / PATCH | `/student/match-choices`, `.../match-choices/{choice}` | X-API-KEY + Bearer + student |
 | GET / POST / PATCH / DELETE | `/coordinator/companies`, `.../companies/{id}` | X-API-KEY + Bearer + coordinator |
 | GET / POST / PATCH / DELETE | `/coordinator/users`, `.../users/{id}` | X-API-KEY + Bearer + coordinator |
 | POST | `/coordinator/users/{student}/assignments` | X-API-KEY + Bearer + coordinator |
@@ -3173,6 +3565,8 @@ With a student JWT and **X-API-KEY** set:
 | GET | `/coordinator/vacancies` | X-API-KEY + Bearer + coordinator |
 | GET | `/coordinator/students/{user}/vacancies-with-scores` | X-API-KEY + Bearer + coordinator |
 | POST | `/coordinator/vacancies/{vacancy}/comments` | X-API-KEY + Bearer + coordinator |
+| GET | `/coordinator/match-choices` | X-API-KEY + Bearer + coordinator |
+| PATCH | `/coordinator/match-choices/{choice}/approve`, `.../reject` | X-API-KEY + Bearer + coordinator |
 | GET / POST | `/dev/api-keys` | Bearer + dev (no API key) |
 | GET / DELETE | `/admin/api-keys`, `.../admin/api-keys/{apiKey}` | Bearer + admin (no API key) |
 

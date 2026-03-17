@@ -118,4 +118,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(StudentCoordinatorAssignment::class, 'student_user_id');
     }
+
+    public function studentMatchChoices(): HasMany
+    {
+        return $this->hasMany(StudentMatchChoice::class, 'student_user_id');
+    }
 }
