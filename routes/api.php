@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\Company\CompanyMatchChoiceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Student\StudentProfileViewController;
 use App\Http\Controllers\Api\Student\StudentFlagController;
+use App\Http\Controllers\Api\Coordinator\CoordinatorFlagController;
 
 Route::prefix('v1')->group(function () {
     // Public: register as stage coordinator
@@ -168,6 +169,9 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::get('coordinator/match-choices', [CoordinatorMatchChoiceController::class, 'index']);
             Route::patch('coordinator/match-choices/{choice}/approve', [CoordinatorMatchChoiceController::class, 'approve']);
             Route::patch('coordinator/match-choices/{choice}/reject', [CoordinatorMatchChoiceController::class, 'reject']);
+            Route::get('coordinator/flags', [CoordinatorFlagController::class, 'index']);
+            Route::get('coordinator/flags/{flag}', [CoordinatorFlagController::class, 'show']);
+            Route::patch('coordinator/flags/{flag}', [CoordinatorFlagController::class, 'updateStatus']);
         });
     });
 });
