@@ -34,25 +34,16 @@ class CoordinatorFlagController extends Controller
             $query->where('status', $request->status);
         }
 
-        $flags = $query->latest()->paginate($request->integer('per_page', 15));
+        $flags = $query->latest()->get();
 
         return response()->json([
-            'data' => $flags->map(fn($flag) => $this->formatFlag($flag))->items(),
-            'meta' => [
-                'current_page' => $flags->currentPage(),
-                'last_page' => $flags->lastPage(),
-                'per_page' => $flags->perPage(),
-                'total' => $flags->total(),
-            ],
+            'data' => $flags->map(fn($flag) => $this->formatFlag($flag)),
             'links' => [
                 'self' => url('/api/v2/coordinator/flags'),
             ],
         ]);
     }
 
-    /**
-     * Show a single flag
-     */
     public function show(MatchFlag $flag): JsonResponse
     {
         $flag->load(['student', 'vacancy', 'company']);
@@ -72,7 +63,7 @@ class CoordinatorFlagController extends Controller
     public function updateStatus(Request $request, MatchFlag $flag): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['required', 'in:open,in_progress,closed'],
+            'status' => ['required', 'in:open,in behandeling,gesloten'],
         ]);
 
         $flag->update([

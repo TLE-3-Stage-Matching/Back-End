@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\Student\StudentFavoriteCompanyController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Student\StudentProfileViewController;
 use App\Http\Controllers\Api\Student\StudentFlagController;
+use App\Http\Controllers\Api\Coordinator\CoordinatorFlagController;
 
 Route::prefix('v1')->group(function () {
     // Public: register as stage coordinator
