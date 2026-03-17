@@ -9,6 +9,8 @@ class StudentPreference extends Model
 {
     public $incrementing = false;
 
+    protected $primaryKey = 'student_user_id';
+
     protected $fillable = [
         'student_user_id',
         'desired_role_tag_id',
