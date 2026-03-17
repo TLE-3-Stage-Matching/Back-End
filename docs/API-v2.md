@@ -1129,6 +1129,120 @@ Delete a comment. The comment must belong to a vacancy of your company; otherwis
 
 ---
 
+### Match choices (company) (v2)
+
+Company users can list match choices for their company's vacancies and approve or reject them with a decision note. Only choices with status `requested` or `shortlisted` can be approved or rejected.
+
+#### List match choices (company)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/company/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
+
+Returns all match choices for vacancies belonging to the authenticated user's company. Optional query parameters: `vacancy_id`, `status`.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "student_user_id": 2,
+      "vacancy_id": 10,
+      "status": "requested",
+      "student_note": "Interested in backend focus",
+      "decided_by_user_id": null,
+      "decided_at": null,
+      "decision_note": null,
+      "created_at": "2025-03-10T12:00:00+00:00",
+      "updated_at": "2025-03-10T12:00:00+00:00",
+      "student": {
+        "id": 2,
+        "email": "student@example.com",
+        "first_name": "Jane",
+        "last_name": "Doe"
+      },
+      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5 }
+    }
+  ],
+  "links": { "self": "https://<host>/api/v2/company/match-choices" }
+}
+```
+
+</details>
+
+---
+
+#### Approve match choice (company)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/company/match-choices/{choice}/approve` |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
+
+Approve a match choice. The choice must belong to a vacancy of your company and have status `requested` or `shortlisted`. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "We would like to invite this student for an interview."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice approved.", "data": <choice with student and vacancy>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.  
+**Error (404):** Choice not found or vacancy not owned by your company.
+
+---
+
+#### Reject match choice (company)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/company/match-choices/{choice}/reject` |
+| **Auth** | `X-API-KEY` + Bearer token + company role |
+
+Reject a match choice. Same ownership and status rules as approve. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "We have filled this position internally."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice rejected.", "data": <choice>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.  
+**Error (404):** Choice not found or vacancy not owned by your company.
+
+[↑ Back to index](#index)
+
+---
+
 ## Student-only endpoints
 
 All routes below require:
@@ -1905,6 +2019,168 @@ ID.
 ```
 
 **Error (404):** `{ "message": "Saved vacancy not found." }` – No active saved record for this student and vacancy.
+
+[↑ Back to index](#index)
+
+---
+
+### Student match choices (v2)
+
+Students can choose a vacancy as a match choice and leave a note explaining why. One choice per student–vacancy pair. Only choices with status `requested` or `shortlisted` can be updated or withdrawn; once a coordinator or company approves or rejects, the choice is final.
+
+#### List my match choices
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Returns the authenticated student's match choices, most recent first. Optional query parameters: `status`, `vacancy_id`.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "student_user_id": 1,
+      "vacancy_id": 10,
+      "status": "requested",
+      "student_note": "Interested in backend focus",
+      "decided_by_user_id": null,
+      "decided_at": null,
+      "decision_note": null,
+      "created_at": "2025-03-10T12:00:00+00:00",
+      "updated_at": "2025-03-10T12:00:00+00:00",
+      "vacancy": {
+        "id": 10,
+        "title": "Backend developer",
+        "company_id": 5,
+        "company": { "id": 5, "name": "Acme Corp" }
+      }
+    }
+  ],
+  "links": { "self": "https://<host>/api/v2/student/match-choices" }
+}
+```
+
+</details>
+
+---
+
+#### Create match choice
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/student/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Create a choice for a vacancy with an optional student note. The vacancy must exist and belong to an active company. Only one choice per student–vacancy pair.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "vacancy_id": 10,
+  "student_note": "I chose this because of the tech stack."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| vacancy_id | number | Yes | Must exist in `vacancies`; vacancy's company must be active. |
+| student_note | string | No | Optional note explaining why the student chose this vacancy. |
+
+<details>
+<summary><strong>Success (201) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "message": "Match choice created successfully.",
+  "data": {
+    "id": 1,
+    "student_user_id": 1,
+    "vacancy_id": 10,
+    "status": "requested",
+    "student_note": "I chose this because of the tech stack.",
+    "decided_by_user_id": null,
+    "decided_at": null,
+    "decision_note": null,
+    "created_at": "2025-03-10T12:00:00+00:00",
+    "updated_at": "2025-03-10T12:00:00+00:00",
+    "vacancy": {
+      "id": 10,
+      "title": "Backend developer",
+      "company_id": 5,
+      "company": { "id": 5, "name": "Acme Corp" }
+    }
+  },
+  "links": {
+    "self": "https://<host>/api/v2/student/match-choices/1",
+    "collection": "https://<host>/api/v2/student/match-choices"
+  }
+}
+```
+
+</details>
+
+**Error (422):** Validation error; or vacancy not found / company not active; or a choice for this student and vacancy already exists.
+
+---
+
+#### Get one match choice
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/student/match-choices/{choice}` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Returns a single match choice. Only the owning student can access it. Path parameter `choice` is the choice ID.
+
+**Success (200):** `{ "data": <choice object with vacancy and company>, "links": {...} }`
+
+**Error (404):** `{ "message": "Match choice not found." }`
+
+---
+
+#### Update match choice (note or withdraw)
+
+| | |
+|---|---|
+| **Method** | `PUT` or `PATCH` |
+| **Path** | `/student/match-choices/{choice}` |
+| **Auth** | `X-API-KEY` + Bearer token + student role |
+
+Update the student note and/or set status to `withdrawn`. Only allowed when the choice has not yet been decided (no `decided_at`). Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "student_note": "Updated reason.",
+  "status": "withdrawn"
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| student_note | string | No | New note (optional). |
+| status | string | No | Only `"withdrawn"` allowed; withdraws the choice. |
+
+**Success (200):** `{ "message": "Match choice updated successfully.", "data": <choice>, "links": {...} }`
+
+**Error (403):** Choice already decided or not in a state that can be updated. **Error (404):** Match choice not found.
 
 [↑ Back to index](#index)
 
@@ -2730,6 +3006,7 @@ Manage **student** and **company** users. For company users, the company must ex
 **Example:** `GET /coordinator/users?role=student&search=jan&per_page=10`
 **Example:** `GET /coordinator/users?role=student&per_page=10`  
 **Example (only active companies’ users):** `GET /coordinator/users?active_companies_only=1`
+**Example (students with a match choice):** `GET /coordinator/users?role=student&has_match_choice=1`
 
 <details>
 <summary><strong>Success (200) – Response body (JSON)</strong></summary>
@@ -3368,6 +3645,114 @@ Add a comment to a vacancy (visible to the company). The vacancy must exist.
 
 **Error (404):** Vacancy not found.  
 **Error (403):** Not a coordinator.
+
+[↑ Back to index](#index)
+
+---
+
+## Match choices (coordinator) (v2)
+
+Coordinators can list all match choices (with filters) and approve or reject them with a decision note. Only choices with status `requested` or `shortlisted` can be approved or rejected.
+
+#### List match choices (coordinator)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/coordinator/match-choices` |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
+
+Returns match choices, paginated. Optional query parameters: `student_user_id`, `vacancy_id`, `company_id`, `status`, `per_page`.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "student_user_id": 2,
+      "vacancy_id": 10,
+      "status": "requested",
+      "student_note": "Interested in backend focus",
+      "decided_by_user_id": null,
+      "decided_at": null,
+      "decision_note": null,
+      "created_at": "2025-03-10T12:00:00+00:00",
+      "updated_at": "2025-03-10T12:00:00+00:00",
+      "student": { "id": 2, "email": "student@example.com", "first_name": "Jane", "last_name": "Doe" },
+      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5, "company": { "id": 5, "name": "Acme Corp" } }
+    }
+  ],
+  "meta": { "current_page": 1, "last_page": 1, "per_page": 15, "total": 1 },
+  "links": { "self": "https://<host>/api/v2/coordinator/match-choices" }
+}
+```
+
+</details>
+
+---
+
+#### Approve match choice (coordinator)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/coordinator/match-choices/{choice}/approve` |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
+
+Approve a match choice. The choice must have status `requested` or `shortlisted`. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "Approved for placement."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice approved.", "data": <choice with student, vacancy, decided_by_user>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.
+
+---
+
+#### Reject match choice (coordinator)
+
+| | |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/coordinator/match-choices/{choice}/reject` |
+| **Auth** | `X-API-KEY` + Bearer token + coordinator role |
+
+Reject a match choice. Same status rules as approve. Path parameter `choice` is the choice ID.
+
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
+
+```json
+{
+  "decision_note": "Student does not meet minimum requirements for this vacancy."
+}
+```
+
+</details>
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| decision_note | string | Yes | Reason for the decision (non-empty). |
+
+**Success (200):** `{ "message": "Match choice rejected.", "data": <choice>, "links": {...} }`
+
+**Error (403):** Choice already decided or withdrawn.
 
 [↑ Back to index](#index)
 

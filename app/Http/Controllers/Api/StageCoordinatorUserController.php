@@ -36,6 +36,11 @@ class StageCoordinatorUserController extends Controller
             });
         }
 
+        // Only students that have at least one match choice (any status)
+        if ($request->boolean('has_match_choice')) {
+            $query->where('role', UserRole::Student)->whereHas('studentMatchChoices');
+        }
+
         if ($request->filled('search')) {
             $term = '%' . $request->input('search') . '%';
             $query->where(function ($q) use ($term) {

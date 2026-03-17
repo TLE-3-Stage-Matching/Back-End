@@ -21,6 +21,9 @@ use App\Http\Controllers\Api\LanguageLevelController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\VacancyController;
 use App\Http\Controllers\Api\Student\StudentFavoriteCompanyController;
+use App\Http\Controllers\Api\Student\StudentMatchChoiceController;
+use App\Http\Controllers\Api\Coordinator\CoordinatorMatchChoiceController;
+use App\Http\Controllers\Api\Company\CompanyMatchChoiceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Student\StudentProfileViewController;
 use App\Http\Controllers\Api\Student\StudentFlagController;
@@ -116,6 +119,9 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::get('company/vacancies/{vacancy}/comments', [CompanyVacancyController::class, 'listComments']);
             Route::patch('company/vacancies/comments/{comment}', [CompanyVacancyController::class, 'updateComment']);
             Route::delete('company/vacancies/comments/{comment}', [CompanyVacancyController::class, 'destroyComment']);
+            Route::get('company/match-choices', [CompanyMatchChoiceController::class, 'index']);
+            Route::patch('company/match-choices/{choice}/approve', [CompanyMatchChoiceController::class, 'approve']);
+            Route::patch('company/match-choices/{choice}/reject', [CompanyMatchChoiceController::class, 'reject']);
         });
 
         Route::middleware('student')->group(function () {
@@ -141,6 +147,10 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::get('student/vacancies/with-scores', [StudentVacancyMatchController::class, 'withScores']);
             Route::get('student/vacancies/{vacancy}/detail', [StudentVacancyMatchController::class, 'detail']);
             Route::get('student/vacancies-with-scores', [StudentMatchScoreController::class, 'vacanciesWithScores']);
+            Route::get('student/match-choices', [StudentMatchChoiceController::class, 'index']);
+            Route::post('student/match-choices', [StudentMatchChoiceController::class, 'store']);
+            Route::get('student/match-choices/{choice}', [StudentMatchChoiceController::class, 'show']);
+            Route::match(['put', 'patch'], 'student/match-choices/{choice}', [StudentMatchChoiceController::class, 'update']);
             Route::post('student/flags', [StudentFlagController::class, 'store']);
         });
 
@@ -155,6 +165,9 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::post('coordinator/users/{student}/assignments', [StageCoordinatorUserController::class, 'assignCoordinator']);
             Route::post('coordinator/users/{student}/unassignments', [StageCoordinatorUserController::class, 'unassignCoordinator']);
             Route::post('coordinator/vacancies/{vacancy}/comments', [CoordinatorVacancyController::class, 'storeComment']);
+            Route::get('coordinator/match-choices', [CoordinatorMatchChoiceController::class, 'index']);
+            Route::patch('coordinator/match-choices/{choice}/approve', [CoordinatorMatchChoiceController::class, 'approve']);
+            Route::patch('coordinator/match-choices/{choice}/reject', [CoordinatorMatchChoiceController::class, 'reject']);
         });
     });
 });
