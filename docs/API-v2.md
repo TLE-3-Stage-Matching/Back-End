@@ -3371,7 +3371,213 @@ Add a comment to a vacancy (visible to the company). The vacancy must exist.
 
 [↑ Back to index](#index)
 
+## Flags (coordinator) (v2)
+
+Coordinatoren kunnen alle door studenten ingediende flags bekijken, filteren en de status van een flag aanpassen.
+Filters: student, bedrijf, vacature en status.
+
+### List flags (filteren)
+
+|            |                                               |
+|------------|-----------------------------------------------|
+| **Method** | `GET`                                         |
+| **Path**   | `/coordinator/flags`                          |
+| **Auth**   | `X-API-KEY` + Bearer token + coordinator role |
+
+Optionele query-parameters (alleen één of meerdere tegelijk mogelijk):
+
+- `student_id` (integer) — filter op de id van de student die de flag maakte
+- `vacancy_id` (integer) — filter op vacature id
+- `company_id` (integer) — filter op bedrijf id
+- `status` (string) — filter op status (bijv. `open`, `in behandeling`, `gesloten`)
+
+> Let op: de huidige implementatie retourneert resultaten op datum gesorteerd (latest first).
+
+<details>
+<summary><strong>Voorbeeld request</strong></summary>
+
+GET /api/v2/coordinator/flags?student_id=42&status=open
+</details>
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "status": "open",
+            "disputed_factor": "match_score",
+            "message": "De match lijkt onjuist...",
+            "resolution_note": null,
+            "created_at": "2026-03-17T12:00:00Z",
+            "student": {
+                "id": 42,
+                "name": "Jan Jansen",
+                "email": "jan@example.com"
+            },
+            "vacancy": {
+                "id": 123,
+                "title": "Stagiair Backend Developer"
+            },
+            "company": {
+                "id": 17,
+                "name": "Acme BV"
+            }
+        },
+        {
+            "id": 2,
+            "status": "in behandeling",
+            "disputed_factor": "required_experience",
+            "message": "Ik heb niet de gevraagde jaren ervaring.",
+            "resolution_note": "Coordinator vraagt om meer info.",
+            "created_at": "2026-03-16T08:30:00Z",
+            "student": {
+                "...": "..."
+            },
+            "vacancy": {
+                "...": "..."
+            },
+            "company": {
+                "...": "..."
+            }
+        }
+    ],
+    "links": {
+        "self": "https://<your-api-host>/api/v2/coordinator/flags"
+    }
+}
+```
+
+</details>
+
+**Errors**
+
+- 403 wanneer de gebruiker geen coordinator is.
+- 422 voor ongeldige querywaarden (indien je inputvalidatie toevoegt).
+- 404 niet van toepassing voor lijst (geen specifieke resource id gebruikt).
+
 ---
+
+### Get flag by id
+
+|            |                                               |
+|------------|-----------------------------------------------|
+| **Method** | `GET`                                         |
+| **Path**   | `/coordinator/flags/{flag}`                   |
+| **Auth**   | `X-API-KEY` + Bearer token + coordinator role |
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+    "data": {
+        "id": 1,
+        "status": "open",
+        "disputed_factor": "match_score",
+        "message": "De match lijkt onjuist...",
+        "resolution_note": null,
+        "created_at": "2026-03-17T12:00:00Z",
+        "student": {
+            "id": 42,
+            "name": "Jan Jansen",
+            "email": "jan@example.com"
+        },
+        "vacancy": {
+            "id": 123,
+            "title": "Stagiair Backend Developer"
+        },
+        "company": {
+            "id": 17,
+            "name": "Acme BV"
+        }
+    },
+    "links": {
+        "self": "https://<your-api-host>/api/v2/coordinator/flags/1",
+        "collection": "https://<your-api-host>/api/v2/coordinator/flags"
+    }
+}
+```
+
+</details>
+
+**Errors**
+
+- 403 wanneer gebruiker geen coordinator is.
+- 404 wanneer de `flag` id niet bestaat.
+
+---
+
+### Update flag status
+
+|            |                                               |
+|------------|-----------------------------------------------|
+| **Method** | `PATCH`                                       |
+| **Path**   | `/coordinator/flags/{flag}`                   |
+| **Auth**   | `X-API-KEY` + Bearer token + coordinator role |
+
+Body:
+
+```json
+{
+    "status": "in behandeling"
+}
+```
+
+Geldige statuswaarden (zoals in de backend): `open`, `in behandeling`, `gesloten`.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+    "message": "Flag status updated successfully.",
+    "data": {
+        "id": 1,
+        "status": "in behandeling",
+        "disputed_factor": "match_score",
+        "message": "De match lijkt onjuist...",
+        "resolution_note": null,
+        "created_at": "2026-03-17T12:00:00Z",
+        "student": {
+            "...": "..."
+        },
+        "vacancy": {
+            "...": "..."
+        },
+        "company": {
+            "...": "..."
+        }
+    },
+    "links": {
+        "self": "https://<your-api-host>/api/v2/coordinator/flags/1",
+        "collection": "https://<your-api-host>/api/v2/coordinator/flags"
+    }
+}
+```
+
+</details>
+
+**Errors**
+
+- 403 wanneer de gebruiker geen coordinator is.
+- 422 wanneer `status` ontbreekt of geen geldige waarde is.
+- 404 wanneer de `flag` id niet bestaat.
+
+---
+
+Notes / implementatieverwijzingen
+
+- Route-definities: zie `routes/api.php` (regel met `Route::get('coordinator/flags'...)`,
+  `Route::get('coordinator/flags/{flag}')`, `Route::patch('coordinator/flags/{flag}')`).
+- Controller: `app/Http/Controllers/Api/Coordinator/CoordinatorFlagController.php` — bevat `index`, `show` en
+  `updateStatus` en formatteert de response (`formatFlag`).
+- Filters in de controller: `student_id`, `vacancy_id`, `company_id`, `status`. De controller gebruikt deze om de query
+  te beperken en retourneert de resultaten gesorteerd op datum (laatste eerst).
+
+[↑ Back to index](#index)
 
 ## Dev / Admin (v2)
 
