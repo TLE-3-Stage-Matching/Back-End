@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Student\StudentProfileViewController;
 use App\Http\Controllers\Api\Student\StudentFlagController;
 use App\Http\Controllers\Api\Coordinator\CoordinatorFlagController;
+use App\Http\Controllers\Api\Coordinator\CoordinatorTagController;
 
 Route::prefix('v1')->group(function () {
     // Public: register as stage coordinator
@@ -172,6 +173,7 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::get('coordinator/flags', [CoordinatorFlagController::class, 'index']);
             Route::get('coordinator/flags/{flag}', [CoordinatorFlagController::class, 'show']);
             Route::patch('coordinator/flags/{flag}', [CoordinatorFlagController::class, 'updateStatus']);
+            Route::apiResource('coordinator/tags', CoordinatorTagController::class);
         });
     });
 });

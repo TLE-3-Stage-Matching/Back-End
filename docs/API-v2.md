@@ -98,6 +98,7 @@ updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacan
     - [Student vacancies with match scores (coordinator) (v2)](#student-vacancies-with-match-scores-coordinator-v2)
     - [Add comment to vacancy (v2)](#add-comment-to-vacancy-v2)
     - [Student–coordinator assignments (coordinator) (v2)](#studentcoordinator-assignments-coordinator)
+    - [Coordinator tag management (v2)](#coordinator-tag-management-v2)
 - [Public data (v2)](#public-data-v2)
     - [List active companies (v2)](#list-active-companies-v2)
     - [List vacancies (active companies only) (v2)](#list-vacancies-active-companies-only-v2)
@@ -3964,6 +3965,88 @@ Notes / implementatieverwijzingen
 
 [↑ Back to index](#index)
 
+## Coordinator tag management (v2)
+
+Coordinators can manage the master tag catalogue over HTTP. These routes are **coordinator-only** and are separate from `GET /tags`, which remains the shared authenticated listing endpoint.
+
+### List tags (coordinator)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/coordinator/tags` |
+| **Auth** | X-API-KEY + Bearer token + coordinator role |
+
+**Query parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| search | string | Optional. Search by tag name (partial match). |
+| tag_type | string | Optional. Filter by type (e.g. `skill`, `trait`, `industry`, `major`). |
+| is_active | boolean | Optional. Filter by active state. |
+| per_page | number | Optional. Pagination size (default 15). |
+
+### Create tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/coordinator/tags` |
+| **Auth** | X-API-KEY + Bearer token + coordinator role |
+
+```json
+{
+  "name": "Platform Engineering",
+  "tag_type": "industry",
+  "is_active": true
+}
+```
+
+- `is_active` defaults to `true` when omitted.
+- `name + tag_type` must be unique.
+
+### Get tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/coordinator/tags/{tag}` |
+| **Auth** | X-API-KEY + Bearer token + coordinator role |
+
+### Update tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `PUT` or `PATCH` |
+| **Path** | `/coordinator/tags/{tag}` |
+| **Auth** | X-API-KEY + Bearer token + coordinator role |
+
+```json
+{
+  "name": "Platform & DevOps",
+  "is_active": false
+}
+```
+
+### Delete tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `DELETE` |
+| **Path** | `/coordinator/tags/{tag}` |
+| **Auth** | X-API-KEY + Bearer token + coordinator role |
+
+Unused tags can be deleted. If a tag is already referenced by student tags, vacancy requirements, company industry tags, student preferences, or match factors, the API returns **422** and asks the coordinator to deactivate the tag instead.
+
+**422 example:**
+```json
+{
+  "message": "Tag is in use and cannot be deleted. Deactivate it instead by setting is_active=false."
+}
+```
+
+[↑ Back to index](#index)
+
 ## Dev / Admin (v2)
 
 These routes do **not** require the `X-API-KEY` header; they use JWT only. Access is restricted by role (dev or admin).
@@ -4230,6 +4313,7 @@ also include an `errors` object keyed by field.
 | GET                         | `/coordinator/vacancies`                                                    | X-API-KEY + Bearer + coordinator |
 | GET                         | `/coordinator/students/{user}/vacancies-with-scores`                        | X-API-KEY + Bearer + coordinator |
 | POST                        | `/coordinator/vacancies/{vacancy}/comments`                                 | X-API-KEY + Bearer + coordinator |
+| GET / POST / PATCH / DELETE | `/coordinator/tags`, `.../coordinator/tags/{id}`                            | X-API-KEY + Bearer + coordinator |
 | GET / POST                  | `/dev/api-keys`                                                             | Bearer + dev (no API key)        |
 | GET / DELETE                | `/admin/api-keys`, `.../admin/api-keys/{apiKey}`                            | Bearer + admin (no API key)      |
 
