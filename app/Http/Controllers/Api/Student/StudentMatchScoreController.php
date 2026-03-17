@@ -66,11 +66,16 @@ class StudentMatchScoreController extends Controller
         $offset = ($page - 1) * $perPage;
         $slice = array_slice($scores, $offset, $perPage);
 
-        $items = array_values(array_filter(array_map(function ($result) use ($vacancies) {
+        $items = array_values(array_filter(array_map(function ($result) use ($vacancies, $vacanciesWithTags) {
             $vacancy = $vacancies->get($result->vacancyId);
             if (! $vacancy) {
                 return null;
             }
+
+            $mustHaveMissCount = count($result->mustHaveMisses);
+            $mustHaveTotal = $this->countMustHaveTags($vacanciesWithTags[$result->vacancyId] ?? []);
+            $mustHaveScore = $result->dimensionDetail['s_mh'] ?? 0.0;
+            $niceToHaveScore = $result->dimensionDetail['s_nth'] ?? 0.0;
 
             return [
                 'vacancy' => [
@@ -89,13 +94,14 @@ class StudentMatchScoreController extends Controller
                     ] : null,
                 ],
                 'match_score' => $result->score,
+                'score_feedback' => $this->buildScoreFeedback($result->score),
                 'subscores' => [
                     'must_have' => [
-                        'score' => $result->dimensionDetail['s_mh'] ?? 0.0,
+                        'score' => $mustHaveScore,
                         'explanation' => 'Weighted average match for must-have tags.',
                     ],
                     'nice_to_have' => [
-                        'score' => $result->dimensionDetail['s_nth'] ?? 0.0,
+                        'score' => $niceToHaveScore,
                         'explanation' => 'Weighted average match for nice-to-have tags.',
                     ],
                     'combined' => [
@@ -107,11 +113,27 @@ class StudentMatchScoreController extends Controller
                         'explanation' => 'Penalty for missing must-have tags.',
                     ],
                 ],
+                'human_explanation' => [
+                    'summary' => $this->buildHumanSummary($result->score, $mustHaveTotal, $mustHaveMissCount),
+                    'how_score_is_calculated' => [
+                        'Must-have tags drive 80% of the score.',
+                        'Nice-to-have tags drive 20% of the score.',
+                        'Missing must-have tags add a penalty that reduces the final score.',
+                    ],
+                ],
             ];
         }, $slice)));
 
         return response()->json([
             'data' => $items,
+            'algorithm_transparency' => [
+                'in_simple_terms' => [
+                    'Your tags are compared with vacancy tags.',
+                    'Must-have tags count most, nice-to-have tags count less.',
+                    'Missing must-have tags reduce your score with a penalty.',
+                    'The final score is shown on a 0-100 scale.',
+                ],
+            ],
             'meta' => [
                 'current_page' => $page,
                 'last_page' => $lastPage,
@@ -122,5 +144,46 @@ class StudentMatchScoreController extends Controller
                 'self' => url('/api/v1/student/vacancies-with-scores'),
             ],
         ]);
+    }
+
+    /**
+     * @return array{label: string, message: string}
+     */
+    private function buildScoreFeedback(int $score): array
+    {
+        if ($score > 80) {
+            return ['label' => 'great_match', 'message' => 'Great match: your profile strongly aligns with this vacancy.'];
+        }
+
+        if ($score >= 70) {
+            return ['label' => 'good_match', 'message' => 'Good match: you are close, and a few targeted improvements can raise your score.'];
+        }
+
+        if ($score < 60) {
+            return ['label' => 'subpar_match', 'message' => 'Subpar match right now: focus on missing or weak tags to improve your fit.'];
+        }
+
+        return ['label' => 'fair_match', 'message' => 'Fair match: there is clear potential with focused improvements.'];
+    }
+
+    /**
+     * @param  array<int, \App\Matching\DTOs\VacancyTagDTO>  $vacancyTags
+     */
+    private function countMustHaveTags(array $vacancyTags): int
+    {
+        return count(array_filter($vacancyTags, fn ($vt) => $vt->requirementType === 'must_have'));
+    }
+
+    private function buildHumanSummary(int $score, int $mustHaveTotal, int $mustHaveMissCount): string
+    {
+        if ($mustHaveTotal === 0) {
+            return "You scored {$score}. This vacancy has no must-have tags, so your score mainly comes from nice-to-have overlap and tag weights.";
+        }
+
+        if ($mustHaveMissCount > 0) {
+            return "You scored {$score}. Missing {$mustHaveMissCount} must-have tag(s) is the biggest reason your score is lower.";
+        }
+
+        return "You scored {$score}. You currently match all must-have tags for this vacancy, so the score mostly depends on nice-to-have overlap and tag weights.";
     }
 }
