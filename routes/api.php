@@ -155,6 +155,9 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::post('coordinator/users/{student}/assignments', [StageCoordinatorUserController::class, 'assignCoordinator']);
             Route::post('coordinator/users/{student}/unassignments', [StageCoordinatorUserController::class, 'unassignCoordinator']);
             Route::post('coordinator/vacancies/{vacancy}/comments', [CoordinatorVacancyController::class, 'storeComment']);
+            Route::get('coordinator/flags', [CoordinatorFlagController::class, 'index']);
+            Route::get('coordinator/flags/{flag}', [CoordinatorFlagController::class, 'show']);
+            Route::patch('coordinator/flags/{flag}', [CoordinatorFlagController::class, 'updateStatus']);
         });
     });
 });
