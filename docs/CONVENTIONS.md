@@ -17,7 +17,8 @@ This file describes how to **update the API documentation** (`docs/API.md`) and 
 
 ### When adding or changing an endpoint
 
-1. **Add or update the section** for that endpoint using the existing pattern:
+1. **Note whether the endpoint is v1, v2, or both.** Update [docs/API.md](API.md) for v1 (and the versioning note there); update [docs/API-v2.md](API-v2.md) for v2-only endpoints. Keep the versioning note in API.md pointing to API-v2.md for v2-only features.
+2. **Add or update the section** for that endpoint using the existing pattern:
    - A **Method / Path / Auth** table.
    - **Query parameters** table if the endpoint supports filters (Param, Type, Default, Description).
    - **Request body** with a JSON example and a **Field / Type / Required / Notes** table.
@@ -29,11 +30,11 @@ This file describes how to **update the API documentation** (`docs/API.md`) and 
    ## Next section
    ```
    Also add this link at the very end of the document (after the last section).
-3. **Update the Index** in `docs/API.md`:
+4. **Update the Index** in `docs/API.md`:
    - Add a new bullet (and sub-bullets if needed) under the right group (**Company users**, **Coordinators**, or **Reference**).
    - Use the same link text and anchor as the section heading (e.g. `[List things](#list-things)`). Anchors are usually lowercase, with spaces and punctuation replaced by hyphens.
 4. **Update “Overview – by role”** if the new endpoint changes what a role can do. Edit the table and/or the short paragraph under it (e.g. tags, inline creation).
-5. **Optional:** If the endpoint is useful for the Postman flow, add a row to the **Testing with Postman** table (Method, Path, short note).
+6. **Optional:** If the endpoint is useful for the Postman flow, add a row to the **Testing with Postman** table (Method, Path, short note).
 
 ### Endpoint doc format (copy-paste template)
 

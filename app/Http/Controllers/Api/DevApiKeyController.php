@@ -41,7 +41,8 @@ class DevApiKeyController extends Controller
 
         $user = $request->user();
 
-        // If this dev user already has an active key, return it instead of generating a new one
+        // Only block when the user has an active key. Revoked keys (is_active = false) do not count:
+        // a user whose key was revoked can generate a new one.
         $existing = ApiKey::query()
             ->where('user_id', $user?->id)
             ->where('is_active', true)

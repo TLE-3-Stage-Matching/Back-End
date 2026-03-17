@@ -24,11 +24,12 @@
             max-width: 72rem;
             margin: 0 auto;
         }
-        .api-docs h1 { font-size: 1.75rem; margin: 0 0 0.5rem; font-weight: 600; }
-        .api-docs h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; padding-bottom: 0.25rem; border-bottom: 1px solid #e3e3e0; font-weight: 600; }
-        .api-docs h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; font-weight: 600; }
+        .api-docs h1 { font-size: 1.75rem; margin: 0 0 0.5rem; font-weight: 600; color: #111827; }
+        .api-docs h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; padding-bottom: 0.25rem; border-bottom: 1px solid #e3e3e0; font-weight: 600; color: #111827; }
+        .api-docs h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; font-weight: 600; color: #111827; }
         @media (prefers-color-scheme: dark) {
             .api-docs h2 { border-bottom-color: #3e3e3a; }
+            .api-docs h1, .api-docs h2, .api-docs h3 { color: #f9fafb; }
         }
         .api-docs p { margin: 0 0 0.75rem; }
         .api-docs ul, .api-docs ol { margin: 0 0 1rem; padding-left: 1.5rem; }
@@ -190,6 +191,78 @@
             }
             #sidebar-list { max-height: none; }
         }
+        #docs-search-input {
+            color: #111827;
+            border-color: #d4d4d4;
+            background: #ffffff;
+        }
+        #docs-search-input::placeholder {
+            color: #4b5563;
+        }
+        #docs-search-results {
+            background: #fff;
+            color: #111827;
+        }
+        #docs-search-results .search-result-item {
+            color: #111827 !important;
+            background: #fff;
+        }
+        #docs-search-results .search-result-item span {
+            color: #111827 !important;
+        }
+        #docs-search-results .search-no-matches {
+            color: #111827 !important;
+        }
+        #docs-search-results * {
+            color: #111827 !important;
+            -webkit-text-fill-color: #111827;
+        }
+        #back-to-top {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        @media (prefers-color-scheme: dark) {
+            #back-to-top {
+                border-color: #404040;
+                background: #262626;
+                color: #f9fafb;
+            }
+            #docs-search-input {
+                border-color: #404040;
+                background: #262626;
+                color: #f9fafb;
+            }
+            #docs-search-input::placeholder {
+                color: #9ca3af;
+            }
+            #docs-search-results {
+                background: #262626;
+                border-color: #404040;
+                color: #f9fafb;
+            }
+            #docs-search-results .search-result-item {
+                color: #f9fafb;
+                background: #262626;
+                border-color: #404040;
+            }
+            #docs-search-results .search-result-item span {
+                color: #f9fafb !important;
+            }
+            #docs-search-results .search-no-matches {
+                color: #f9fafb !important;
+            }
+            #docs-search-results .search-result-item:hover {
+                background: #363636;
+            }
+            #docs-search-results * {
+                color: #f9fafb !important;
+                -webkit-text-fill-color: #f9fafb;
+            }
+        }
     </style>
 </head>
 <body>
@@ -198,8 +271,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-shrink:0;">
                 <strong style="font-size:0.9rem;">Sections</strong>
                 <div style="display:inline-flex; gap:0.25rem; background:#f5f5f4; border-radius:999px; padding:0.1rem;">
-                    <button id="sidebar-tab-v1" type="button" style="border:none; background:#111827; color:#f9fafb; border-radius:999px; padding:0.1rem 0.55rem; font-size:0.8rem; cursor:pointer;">v1</button>
-                    <button id="sidebar-tab-v2" type="button" style="border:none; background:transparent; color:#111827; border-radius:999px; padding:0.1rem 0.55rem; font-size:0.8rem; cursor:pointer;">v2</button>
+                    <button id="sidebar-tab-v1" type="button" style="border:none; background:transparent; color:#111827; border-radius:999px; padding:0.1rem 0.55rem; font-size:0.8rem; cursor:pointer;">v1</button>
+                    <button id="sidebar-tab-v2" type="button" style="border:none; background:#111827; color:#f9fafb; border-radius:999px; padding:0.1rem 0.55rem; font-size:0.8rem; cursor:pointer;">v2</button>
                 </div>
             </div>
             <nav id="sidebar-list" style="padding-right:0.25rem;">
@@ -231,16 +304,22 @@
                 To use <strong>v2</strong>: 1) Log in as dev, 2) Generate an API key, 3) Store it safely, 4) Send it with every <code>X-API-KEY</code> header on <code>/api/v2</code> calls.
             </p>
         </div>
-        <div id="api-version-tabs" style="margin-top: 1rem; margin-bottom: 0.75rem; display:flex; gap:0.5rem;">
-            <button id="tab-v1" type="button" style="padding:0.25rem 0.75rem; font-size:0.9rem; border-radius:999px; border:1px solid #e5e5e5; background:#111827; color:#f9fafb; cursor:pointer;">
-                v1 documentation
-            </button>
-            <button id="tab-v2" type="button" style="padding:0.25rem 0.75rem; font-size:0.9rem; border-radius:999px; border:1px solid #e5e5e5; background:#f5f5f4; color:#111827; cursor:pointer;">
-                v2 documentation
-            </button>
-            <button id="tab-api-keys" type="button" style="display:none; padding:0.25rem 0.75rem; font-size:0.9rem; border-radius:999px; border:1px solid #e5e5e5; background:#f5f5f4; color:#111827; cursor:pointer;">
-                API key management
-            </button>
+        <div style="margin-top: 0.75rem; margin-bottom: 0.5rem; display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
+            <div style="position:relative; flex:1; min-width:200px; max-width:320px;">
+                <input id="docs-search-input" type="text" placeholder="Search endpoints, paths, sections…" aria-label="Search documentation" style="width:100%; padding:0.4rem 0.7rem; padding-right:2rem; font-size:0.9rem; border-radius:0.375rem; border:1px solid #d4d4d4; background:#fff; color:#111827;">
+                <div id="docs-search-results" style="display:none; position:absolute; top:100%; left:0; right:0; margin-top:2px; max-height:280px; overflow-y:auto; background:#fff; border:1px solid #e5e5e5; border-radius:0.375rem; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); z-index:30;"></div>
+            </div>
+            <div id="api-version-tabs" style="display:flex; gap:0.5rem;">
+                <button id="tab-v1" type="button" style="padding:0.25rem 0.75rem; font-size:0.9rem; border-radius:999px; border:1px solid #e5e5e5; background:#f5f5f4; color:#111827; cursor:pointer;">
+                    v1 documentation
+                </button>
+                <button id="tab-v2" type="button" style="padding:0.25rem 0.75rem; font-size:0.9rem; border-radius:999px; border:1px solid #e5e5e5; background:#111827; color:#f9fafb; cursor:pointer;">
+                    v2 documentation
+                </button>
+                <button id="tab-api-keys" type="button" style="display:none; padding:0.25rem 0.75rem; font-size:0.9rem; border-radius:999px; border:1px solid #e5e5e5; background:#f5f5f4; color:#111827; cursor:pointer;">
+                    API key management
+                </button>
+            </div>
         </div>
         <div id="api-docs-markdown"></div>
         <div id="api-keys-management-panel" style="display:none;">
@@ -266,6 +345,8 @@
         </div>
         </div>
     </div>
+
+    <button id="back-to-top" type="button" aria-label="Back to top" style="position:fixed; bottom:1.5rem; right:1.5rem; width:2.5rem; height:2.5rem; border-radius:999px; border:1px solid #d4d4d4; background:#f5f5f4; color:#1f2933; font-size:1.1rem; cursor:pointer; transition:opacity 0.2s ease, transform 0.2s ease; z-index:40; box-shadow:0 1px 3px rgba(0,0,0,0.12);">&#8593;</button>
 
     <div id="dev-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:40; align-items:center; justify-content:center;">
         <div id="dev-modal" style="background:#fff; color:#111827; padding:1.25rem 1.5rem; border-radius:0.75rem; width:100%; max-width:22rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1),0 10px 10px -5px rgba(0,0,0,0.04);">
@@ -364,7 +445,7 @@
             var apiDocsMarkdown = document.getElementById('api-docs-markdown');
             var apiKeysPanel = document.getElementById('api-keys-management-panel');
 
-            var currentDocVersion = 'v1';
+            var currentDocVersion = 'v2';
 
             function setTabInactive(el) {
                 if (!el) return;
@@ -395,6 +476,7 @@
                 }
                 renderSidebar('v1');
                 if (typeof updateScrollSpy === 'function') updateScrollSpy();
+                if (typeof updateBackToTopVisibility === 'function') updateBackToTopVisibility();
             }
 
             function showV2() {
@@ -415,6 +497,7 @@
                 }
                 renderSidebar('v2');
                 if (typeof updateScrollSpy === 'function') updateScrollSpy();
+                if (typeof updateBackToTopVisibility === 'function') updateBackToTopVisibility();
             }
 
             function showApiKeysManagement() {
@@ -427,6 +510,7 @@
                 setTabInactive(tabV2);
                 setTabActive(tabApiKeys);
                 if (typeof loadAdminApiKeys === 'function') loadAdminApiKeys();
+                if (typeof updateBackToTopVisibility === 'function') updateBackToTopVisibility();
             }
 
             tabV1.addEventListener('click', showV1);
@@ -454,6 +538,15 @@
 
             assignHeadingIds(v1Container, 'v1-');
             assignHeadingIds(v2Container, 'v2-');
+
+            // Rewrite "Back to index" links: markdown uses #index but headings have prefixed ids
+            function fixBackToIndexLinks(root, indexId) {
+                root.querySelectorAll('a[href="#index"]').forEach(function (a) {
+                    a.setAttribute('href', '#' + indexId);
+                });
+            }
+            fixBackToIndexLinks(v1Container, 'v1-index');
+            fixBackToIndexLinks(v2Container, 'v2-index-v2');
 
             var sidebarSkipTitles = [
                 'API key details',
@@ -584,8 +677,8 @@
                 });
             }
 
-            // Default to v1 (after headings are collected and renderSidebar exists)
-            showV1();
+            // Default to v2 (after headings are collected and renderSidebar exists)
+            showV2();
 
             // Ensure there is a generic "top" anchor
             if (!document.getElementById('top')) {
@@ -594,14 +687,174 @@
                 document.body.insertBefore(topAnchor, document.body.firstChild);
             }
 
+            // Docs search: index section titles (and path from tables when present)
+            function buildSearchIndex(root, headings, prefix) {
+                var index = [];
+                headings.forEach(function (h) {
+                    var text = (h.text || '').trim();
+                    var slug = h.id ? h.id.replace(/^v[12]-/, '') : '';
+                    var path = '';
+                    var el = root.querySelector('#' + h.id);
+                    if (el && el.nextElementSibling) {
+                        var table = el.nextElementSibling.tagName === 'TABLE' ? el.nextElementSibling : el.nextElementSibling.querySelector('table');
+                        if (table) {
+                            var rows = table.querySelectorAll('tr');
+                            for (var r = 0; r < rows.length; r++) {
+                                var cells = rows[r].querySelectorAll('td, th');
+                                for (var c = 0; c < cells.length; c++) {
+                                    var cellText = (cells[c].textContent || '').trim();
+                                    if (cellText === 'Path' && cells[c + 1]) {
+                                        path = (cells[c + 1].textContent || '').trim();
+                                        break;
+                                    }
+                                }
+                                if (path) break;
+                            }
+                        }
+                    }
+                    index.push({ id: h.id, text: text, slug: slug, path: path });
+                });
+                return index;
+            }
+            var searchIndexV1 = buildSearchIndex(v1Container, v1Headings, 'v1-');
+            var searchIndexV2 = buildSearchIndex(v2Container, v2Headings, 'v2-');
+
+            var docsSearchInput = document.getElementById('docs-search-input');
+            var docsSearchResults = document.getElementById('docs-search-results');
+            var searchDebounce = null;
+            var SEARCH_DEBOUNCE_MS = 200;
+            var MAX_SEARCH_RESULTS = 18;
+
+            function getCurrentSearchIndex() {
+                return currentDocVersion === 'v2' ? searchIndexV2 : searchIndexV1;
+            }
+
+            function showSearchResults(query) {
+                var q = (query || '').trim().toLowerCase();
+                if (!q) {
+                    docsSearchResults.style.display = 'none';
+                    docsSearchResults.innerHTML = '';
+                    return;
+                }
+                var index = getCurrentSearchIndex();
+                var matches = [];
+                for (var i = 0; i < index.length && matches.length < MAX_SEARCH_RESULTS; i++) {
+                    var item = index[i];
+                    if (item.text.toLowerCase().indexOf(q) !== -1 || (item.path && item.path.toLowerCase().indexOf(q) !== -1) || item.slug.indexOf(q) !== -1) {
+                        matches.push(item);
+                    }
+                }
+                docsSearchResults.innerHTML = '';
+                if (matches.length === 0) {
+                    var empty = document.createElement('div');
+                    empty.className = 'search-no-matches';
+                    empty.style.padding = '0.5rem 0.75rem';
+                    empty.style.fontSize = '0.85rem';
+                    empty.style.color = '#111827';
+                    empty.style.setProperty('color', '#111827', 'important');
+                    empty.textContent = 'No matches';
+                    docsSearchResults.appendChild(empty);
+                } else {
+                    matches.forEach(function (item) {
+                        var div = document.createElement('button');
+                        div.type = 'button';
+                        div.className = 'search-result-item';
+                        div.style.display = 'block';
+                        div.style.width = '100%';
+                        div.style.padding = '0.45rem 0.8rem';
+                        div.style.textAlign = 'left';
+                        div.style.fontSize = '0.85rem';
+                        div.style.border = 'none';
+                        div.style.borderBottom = '1px solid #e5e5e5';
+                        div.style.cursor = 'pointer';
+                        div.style.color = '#111827';
+                        div.style.setProperty('color', '#111827', 'important');
+                        div.style.setProperty('-webkit-text-fill-color', '#111827', 'important');
+                        div.style.background = '#fff';
+                        if (item.path) {
+                            div.innerHTML = '<span style="font-weight:600; color:#111827; -webkit-text-fill-color:#111827;">' + escapeHtml(item.text) + '</span><br><span style="font-size:0.8rem; color:#111827; -webkit-text-fill-color:#111827;">' + escapeHtml(item.path) + '</span>';
+                        } else {
+                            div.textContent = item.text;
+                        }
+                        div.addEventListener('click', function () {
+                            var targetEl = document.getElementById(item.id);
+                            if (targetEl) {
+                                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                            docsSearchResults.style.display = 'none';
+                            docsSearchInput.value = '';
+                        });
+                        docsSearchResults.appendChild(div);
+                    });
+                }
+                docsSearchResults.style.display = 'block';
+            }
+
+            if (docsSearchInput && docsSearchResults) {
+                docsSearchInput.addEventListener('input', function () {
+                    var self = this;
+                    if (searchDebounce) clearTimeout(searchDebounce);
+                    searchDebounce = setTimeout(function () {
+                        searchDebounce = null;
+                        showSearchResults(self.value);
+                    }, SEARCH_DEBOUNCE_MS);
+                });
+                docsSearchInput.addEventListener('focus', function () {
+                    if (this.value.trim()) showSearchResults(this.value);
+                });
+                docsSearchInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        docsSearchResults.style.display = 'none';
+                        this.blur();
+                    }
+                });
+            }
+            document.addEventListener('click', function (e) {
+                if (docsSearchResults && docsSearchInput && !docsSearchInput.contains(e.target) && !docsSearchResults.contains(e.target)) {
+                    docsSearchResults.style.display = 'none';
+                }
+            });
+
+            // Back to top button
+            var backToTopBtn = document.getElementById('back-to-top');
+            var backToTopScrollThrottle = null;
+            function updateBackToTopVisibility() {
+                if (!backToTopBtn) return;
+                var show = window.scrollY > 100;
+                if (show) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            }
+            if (backToTopBtn) {
+                backToTopBtn.addEventListener('click', function () {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                window.addEventListener('scroll', function () {
+                    if (backToTopScrollThrottle) return;
+                    backToTopScrollThrottle = setTimeout(function () {
+                        backToTopScrollThrottle = null;
+                        updateBackToTopVisibility();
+                    }, 80);
+                }, { passive: true });
+                updateBackToTopVisibility();
+            }
+
             function scrollToFragment(target, href) {
-                var fragment = href.slice(1); // e.g. "authentication" or "authentication-v2"
+                var fragment = href.slice(1); // e.g. "authentication", "index", or "v1-index"
                 if (!fragment || fragment === 'top') {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }
-                var prefix = v2Container.contains(target) ? 'v2-' : 'v1-';
-                var id = prefix + fragment;
+                var id;
+                // If the fragment already includes a version prefix, use it as-is.
+                if (fragment.indexOf('v1-') === 0 || fragment.indexOf('v2-') === 0) {
+                    id = fragment;
+                } else {
+                    var prefix = v2Container.contains(target) ? 'v2-' : 'v1-';
+                    id = prefix + fragment;
+                }
                 var el = document.getElementById(id);
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -638,26 +891,30 @@
                 });
             }
 
-            // Scrollspy: highlight and center the nav item for the section at viewport center
+            // Scrollspy: highlight the nav item for the heading at the top of the viewport
             var scrollSpyThrottle = null;
             var scrollSpyInterval = 100;
 
             function updateScrollSpy() {
                 var headings = currentDocVersion === 'v2' ? v2Headings : v1Headings;
                 if (!headings.length || !sidebarList) return;
-                var viewportCenter = window.innerHeight / 2;
+
+                // Choose the heading whose top edge is closest to the top of the viewport (>= 0),
+                // falling back to the last heading when scrolled past the end.
                 var bestId = null;
-                var bestDist = Infinity;
+                var bestTop = Infinity;
                 for (var i = 0; i < headings.length; i++) {
                     var el = document.getElementById(headings[i].id);
                     if (!el) continue;
                     var rect = el.getBoundingClientRect();
-                    var mid = rect.top + rect.height / 2;
-                    var dist = Math.abs(mid - viewportCenter);
-                    if (dist < bestDist) {
-                        bestDist = dist;
+                    if (rect.top >= 0 && rect.top < bestTop) {
+                        bestTop = rect.top;
                         bestId = headings[i].id;
                     }
+                }
+                // If none are below the top (user scrolled past all), highlight the last heading.
+                if (!bestId) {
+                    bestId = headings[headings.length - 1].id;
                 }
                 var fragment = bestId ? bestId.replace(/^v[12]-/, '') : null;
                 var links = sidebarList.querySelectorAll('a');

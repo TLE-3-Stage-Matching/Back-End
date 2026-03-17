@@ -10,6 +10,8 @@
   - Base URL: `https://<your-api-host>/api/v2`  
   - Auth: API key in `X-API-KEY` header for all routes, plus JWT Bearer token for protected routes where applicable.
 
+**Versioning:** v1 has a fixed set of endpoints (matching the deployed server list). Student languages (list/sync) exist in both v1 and v2. Endpoints that exist only in v2 (company vacancy comments, view student by ID, student favorite companies, student saved vacancies, student vacancy matching, coordinator student match scores, coordinator assignments/unassignments, coordinator add vacancy comment) are documented in [API-v2.md](API-v2.md). The matching algorithm (student vs coordinator) is explained in [API-v2.md](API-v2.md#how-student-vacancy-matching-works).
+
 **v2 headers example:**
 
 ```http
@@ -38,13 +40,13 @@ only).
 
 | Role                  | Capabilities                                                                                                                                                                                                                                                                                  |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Coordinator**       | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list **vacancies with match scores** for a given student; list companies/users with filters.                                                         |
+| **Coordinator**       | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list companies/users with filters.                                                                                                                 |
 | **Company user**      | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB).                                                                         |
-| **Student**           | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**; list **vacancies with match scores** (tag-based similarity, sorted by score, with subscores and explanations).                                |
+| **Student**           | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**.                                                                                                                                                   |
 | **Any authenticated** | List **tags** (for vacancy forms); `GET /auth/me` (company users get `company_user` and `company` loaded).                                                                                                                                                                                    |
 
-**Tags:** There is no standalone “create tag” endpoint. Tags are created **inline** when a company user creates or
-updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy’s `tags` array; the backend uses
+**Tags:** There is no standalone "create tag" endpoint. Tags are created **inline** when a company user creates or
+updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy's `tags` array; the backend uses
 `firstOrCreate` and persists new tags to the database.
 
 [↑ Back to index](#index)
@@ -55,45 +57,38 @@ updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacan
 
 - [Overview – by role](#overview--by-role)
 - [Authentication](#authentication)
-    - [1. Register as coordinator](#1-register-as-coordinator-stage-coordinator)
-    - [2. Register as company (self-registration)](#2-register-as-company-self-registration)
-    - [3. Login (get JWT)](#3-login-get-jwt)
-    - [4. Current user (me)](#4-current-user-me)
-    - [5. Logout](#5-logout)
-    - [6. Refresh token](#6-refresh-token)
-    - [7. Using JWT from front-ends (SPA / mobile)](#7-using-jwt-from-front-ends-spa--mobile)
+  - [1. Register as coordinator](#1-register-as-coordinator-stage-coordinator)
+  - [2. Register as company (self-registration)](#2-register-as-company-self-registration)
+  - [3. Login (get JWT)](#3-login-get-jwt)
+  - [4. Current user (me)](#4-current-user-me)
+  - [5. Logout](#5-logout)
+  - [6. Refresh token](#6-refresh-token)
+  - [7. Using JWT from front-ends (SPA / mobile)](#7-using-jwt-from-front-ends-spa--mobile)
 - [Company users](#company-users)
-    - [Company-only endpoints](#company-only-endpoints)
-    - [My company](#my-company)
-    - [My profile](#my-profile)
-    - [Tags](#tags)
-    - [Vacancies (company)](#vacancies-company)
+  - [Company-only endpoints](#company-only-endpoints)
+  - [My company](#my-company)
+  - [My profile](#my-profile)
+  - [Tags](#tags)
+  - [Vacancies (company)](#vacancies-company)
 - [Students](#students)
-    - [Student-only endpoints](#student-only-endpoints)
-    - [Student profile](#student-profile)
-    - [Student preferences](#student-preferences)
-    - [Student experiences](#student-experiences)
-    - [Student languages](#student-languages)
-    - [Student tags](#student-tags)
-    - [Vacancies with match scores (student)](#vacancies-with-match-scores-student)
-    - [Top 3 matches (student)](#top-3-matches-student)
-    - [All vacancies with scores (student)](#all-vacancies-with-scores-student)
-    - [Vacancy score detail (student)](#vacancy-score-detail-student)
+  - [Student-only endpoints](#student-only-endpoints)
+  - [Student profile](#student-profile)
+  - [Student preferences](#student-preferences)
+  - [Student experiences](#student-experiences)
+  - [Student languages](#student-languages)
+  - [Student tags](#student-tags)
 - [Coordinators](#coordinators)
-    - [Coordinator-only endpoints](#coordinator-only-endpoints)
-    - [Companies (coordinator)](#companies-coordinator)
-    - [Users (coordinator)](#users-coordinator)
-    - [Vacancies (coordinator)](#vacancies-coordinator)
-    - [Student vacancies with match scores (coordinator)](#student-vacancies-with-match-scores-coordinator)
-    - [Add comment to vacancy](#add-comment-to-vacancy)
-    - [Student–coordinator assignments](#studentcoordinator-assignments-coordinator)
+  - [Coordinator-only endpoints](#coordinator-only-endpoints)
+  - [Companies (coordinator)](#companies-coordinator)
+  - [Users (coordinator)](#users-coordinator)
+  - [Vacancies (coordinator)](#vacancies-coordinator)
 - [Public data (no auth)](#public-data-no-auth)
-    - [List active companies](#list-active-companies)
-    - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
+  - [List active companies](#list-active-companies)
+  - [List vacancies (active companies only)](#list-vacancies-active-companies-only)
 - [Reference](#reference)
-    - [Recommended flow for coordinators](#recommended-flow-for-coordinators)
-    - [Testing with Postman](#testing-with-postman)
-    - [HTTP status codes](#http-status-codes)
+  - [Recommended flow for coordinators](#recommended-flow-for-coordinators)
+  - [Testing with Postman](#testing-with-postman)
+  - [HTTP status codes](#http-status-codes)
 
 [↑ Back to top](#api-documentation-v1--front-end-reference)
 
@@ -338,7 +333,7 @@ send the Bearer token**, how **refresh** works, and how to **prevent deep-linkin
     - For SPAs, a common (simple) option is `localStorage` (e.g. `localStorage.setItem('token', token)`).
     - For higher security you can keep it **in memory only** (Redux/Pinia/Zustand/etc.) and re-login on full refresh.
       This avoids XSS-based token theft but requires a new login when the user reloads the page.
-4. After login, **navigate to your app’s protected area** (e.g. `/dashboard`) and start using the token on all protected
+4. After login, **navigate to your app's protected area** (e.g. `/dashboard`) and start using the token on all protected
    calls.
 
 #### 7.2 Sending the Bearer token
@@ -437,7 +432,7 @@ async function apiRequest(path, options = {}) {
 
 #### 7.4 Preventing deep-linking into protected routes
 
-“Deep-linking” here means typing a protected URL directly into the browser (e.g. `/app/company`) or refreshing on it
+"Deep-linking" here means typing a protected URL directly into the browser (e.g. `/app/company`) or refreshing on it
 while **not authenticated**. To prevent this, your front-end should:
 
 1. **Track auth state** (e.g. `isAuthenticated`, plus the current token).
@@ -492,7 +487,7 @@ All routes below require:
 
 1. **Valid JWT** in `Authorization: Bearer <token>`.
 2. **Logged-in user role = company** and a linked company.  
-   Otherwise you get **403** (e.g. “Forbidden. Company role required.”).
+   Otherwise you get **403** (e.g. "Forbidden. Company role required.").
 
 [↑ Back to index](#index)
 
@@ -510,7 +505,7 @@ Company users can view and update **their own company** (the company they are li
 | **Path**   | `/company`                  |
 | **Auth**   | Bearer token + company role |
 
-Returns the authenticated user’s company.
+Returns the authenticated user's company.
 
 **Success (200):** `{ "data": <company object>, "links": { "self": "..." } }`
 
@@ -526,7 +521,8 @@ Returns the authenticated user’s company.
 
 Update your company. Only include fields you want to change.
 
-**Request body (all optional):**
+<details>
+<summary><strong>Request body (all optional)</strong></summary>
 
 ```json
 {
@@ -542,6 +538,8 @@ Update your company. Only include fields you want to change.
 }
 ```
 
+</details>
+
 | Field           | Type           | Notes                |
 |-----------------|----------------|----------------------|
 | name            | string         | Max 255              |
@@ -554,7 +552,12 @@ Update your company. Only include fields you want to change.
 | description     | string         |                      |
 | is_active       | boolean        |                      |
 
-**Success (200):** `{ "data": <updated company>, "links": { "self": "..." } }`
+<details>
+<summary><strong>Success (200) – Response body</strong></summary>
+
+`{ "data": <updated company>, "links": { "self": "..." } }`
+
+</details>
 
 [↑ Back to index](#index)
 
@@ -572,11 +575,12 @@ Company users can view and update **their own profile** (user fields and job tit
 | **Path**   | `/company/profile`          |
 | **Auth**   | Bearer token + company role |
 
-Returns the authenticated user’s profile including `company_user` and `company`.  
+Returns the authenticated user's profile including `company_user` and `company`.  
 **Note:** `GET /auth/me` also returns the current user and, for company users, includes `company_user` and `company`when
 loaded.
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -607,6 +611,8 @@ loaded.
 }
 ```
 
+</details>
+
 ---
 
 ### Update my profile
@@ -620,7 +626,8 @@ loaded.
 Update your user fields and/or job title. Only include fields you want to change. Omit `password` or send `null` to
 leave it unchanged.
 
-**Request body (all optional):**
+<details>
+<summary><strong>Request body (all optional)</strong></summary>
 
 ```json
 {
@@ -634,6 +641,8 @@ leave it unchanged.
 }
 ```
 
+</details>
+
 | Field       | Type           | Notes                                   |
 |-------------|----------------|-----------------------------------------|
 | first_name  | string         | Max 100                                 |
@@ -644,7 +653,12 @@ leave it unchanged.
 | password    | string or null | Min 6; omit or null to keep current     |
 | job_title   | string or null | Max 255                                 |
 
-**Success (200):** `{ "data": <updated profile>, "links": { "self": "..." } }`
+<details>
+<summary><strong>Success (200) – Response body</strong></summary>
+
+`{ "data": <updated profile>, "links": { "self": "..." } }`
+
+</details>
 
 [↑ Back to index](#index)
 
@@ -669,7 +683,8 @@ in the vacancy payload.
 |----------|--------|----------------------------------------------------------|
 | tag_type | string | Optional. Filter by tag type (e.g. `skill`, `industry`). |
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -689,65 +704,7 @@ in the vacancy payload.
 }
 ```
 
-[↑ Back to index](#index)
-
----
-
-```markdown
-## Languages
-
-A small public catalogue of languages and language proficiency levels.
-
-### List languages
-
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/languages` |
-| **Auth** | None |
-
-**Query parameters:**
-
-| Param | Type | Description |
-|-------|------|-------------|
-| is_active | boolean | Optional. Filter by active state (e.g. `?is_active=1`). |
-
-**Success (200):**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "name": "English",
-      "is_active": true,
-      "created_at": "...",
-      "updated_at": "..."
-    }
-  ],
-  "links": { "self": "..." }
-}
-
-### List language levels
-
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/language-levels` |
-| **Auth** | Bearer token required |
-
-**Success (200):**
-```json
-{
-  "data": [
-    { "id": 1, "name": "A1" },
-    { "id": 2, "name": "A2" },
-    { "id": 3, "name": "B1" }
-  ],
-  "links": { "self": "..." }
-}
-```
-
-Note: To add languages to a student's profile include `language_id` and `language_level_id` in the `/student/languages` payload (see the existing [Student languages](#student-languages) section). The `/student/languages` endpoints are used to list and replace a student's languages (including the associated level for each language).
+</details>
 
 [↑ Back to index](#index)
 
@@ -766,9 +723,10 @@ existing tag IDs** (from `GET /tags`) or by **creating new tags** by sending `na
 | **Path**   | `/company/vacancies`        |
 | **Auth**   | Bearer token + company role |
 
-Returns all vacancies for the authenticated user’s company.
+Returns all vacancies for the authenticated user's company.
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -807,6 +765,8 @@ Returns all vacancies for the authenticated user’s company.
 }
 ```
 
+</details>
+
 ---
 
 ### Create vacancy
@@ -817,7 +777,8 @@ Returns all vacancies for the authenticated user’s company.
 | **Path**   | `/company/vacancies`        |
 | **Auth**   | Bearer token + company role |
 
-**Request body:**
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
@@ -845,6 +806,8 @@ Returns all vacancies for the authenticated user’s company.
 }
 ```
 
+</details>
+
 | Field             | Type   | Required | Notes                                                    |
 |-------------------|--------|----------|----------------------------------------------------------|
 | title             | string | Yes      | Max 255                                                  |
@@ -860,10 +823,16 @@ Returns all vacancies for the authenticated user’s company.
 
 - **Existing tag:** `{ "id": <tag_id> }`. Optional per item: `requirement_type` (string, max 16, default `"skill"`),
   `importance` (number).
-- **New tag:** `{ "name": "<name>", "tag_type": "<tag_type>" }`. The tag is created if it doesn’t exist (matched by
+- **New tag:** `{ "name": "<name>", "tag_type": "<tag_type>" }`. The tag is created if it doesn't exist (matched by
   name + tag_type). Optional: `requirement_type`, `importance`.
 
-**Success (201):** `{ "data": <vacancy with location and vacancy_requirements loaded>, "links": { "self": "..." } }`  
+<details>
+<summary><strong>Success (201) – Response body</strong></summary>
+
+`{ "data": <vacancy with location and vacancy_requirements loaded>, "links": { "self": "..." } }`
+
+</details>
+
 **Major tags:** A vacancy may have at most 5 tags with tag_type "major". If exceeded, the API returns 422 with message: "A vacancy may have at most 5 major tags."
 
 **Error (422):** Validation errors, or `"Location does not belong to your company."` if `location_id` is not one of your
@@ -881,8 +850,13 @@ company's locations.
 
 Returns a single vacancy. The vacancy must belong to the authenticated user's company; otherwise **404** is returned.
 
-**Success (200):**
-`{ "data": <vacancy with location and vacancy_requirements.tag>, "links": { "self": "...", "collection": "..." } }`  
+<details>
+<summary><strong>Success (200) – Response body</strong></summary>
+
+`{ "data": <vacancy with location and vacancy_requirements.tag>, "links": { "self": "...", "collection": "..." } }`
+
+</details>
+
 **Error (404):** Vacancy not found or not owned by your company.
 
 ---
@@ -899,7 +873,8 @@ Update vacancy fields and/or replace its tags. Only include fields you want to c
 array (same format as [Create vacancy](#create-vacancy)); existing requirements are replaced. Omit `tags` to leave tags
 unchanged.
 
-**Request body (all fields optional):**
+<details>
+<summary><strong>Request body (all fields optional)</strong></summary>
 
 ```json
 {
@@ -922,6 +897,8 @@ unchanged.
 }
 ```
 
+</details>
+
 | Field             | Type           | Notes                                                            |
 |-------------------|----------------|------------------------------------------------------------------|
 | title             | string         | Max 255                                                          |
@@ -935,7 +912,13 @@ unchanged.
 
 **Major tags:** Same as create: at most **5** tags with `tag_type` "major" in the replacement `tags` array. **422** with `"A vacancy may have at most 5 major tags."` if exceeded.
 
-**Success (200):** `{ "data": <updated vacancy>, "links": { "self": "...", "collection": "..." } }`  
+<details>
+<summary><strong>Success (200) – Response body</strong></summary>
+
+`{ "data": <updated vacancy>, "links": { "self": "...", "collection": "..." } }`
+
+</details>
+
 **Error (404):** Vacancy not found or not owned by your company.
 **Error (422):** Validation errors, or `"Location does not belong to your company."`, or `"A vacancy may have at most 5 major tags."`
 
@@ -953,114 +936,6 @@ Deletes the vacancy. The vacancy must belong to the authenticated user's company
 
 **Success (204):** No content.  
 **Error (404):** Vacancy not found or not owned by your company.
-
-### List comments on vacancy
-
-|            |                                         |
-|------------|-----------------------------------------|
-| **Method** | `GET`                                   |
-| **Path**   | `/company/vacancies/{vacancy}/comments` |
-| **Auth**   | Bearer token + company role             |
-
-**URL parameters:**
-
-- `vacancy` (number): The vacancy ID.
-
-**Success (200):**
-
-```json
-{
-    "data": [
-        {
-            "id": 1,
-            "vacancy_id": 1,
-            "author_user_id": 2,
-            "comment": "Looking for a candidate with strong PHP skills.",
-            "created_at": "2024-01-01T12:00:00.000000Z",
-            "updated_at": "2024-01-01T12:00:00.000000Z",
-            "author": {
-                "id": 2,
-                "first_name": "Alex",
-                "last_name": "Coordinator"
-            }
-        }
-    ],
-    "links": {
-        "self": "/api/v1/company/vacancies/1/comments"
-    }
-}
-```
-
-**Error (403):** `{ "message": "Forbidden" }` — Vacancy not owned by your company.
-
----
-
-### Update vacancy comment
-
-|            |                                         |
-|------------|-----------------------------------------|
-| **Method** | `PATCH` or `PUT`                        |
-| **Path**   | `/company/vacancies/comments/{comment}` |
-| **Auth**   | Bearer token + company role             |
-
-**URL parameters:**
-
-- `comment` (number): The comment ID.
-
-**Request body:**
-
-```json
-{
-    "comment": "Updated comment text from company user."
-}
-```
-
-| Field   | Type   | Required | Notes    |
-|---------|--------|----------|----------|
-| comment | string | Yes      | Max 1000 |
-
-**Success (200):**
-
-```json
-{
-    "message": "Comment updated successfully.",
-    "data": {
-        "id": 1,
-        "vacancy_id": 1,
-        "author_user_id": 2,
-        "comment": "Updated comment text from company user.",
-        "created_at": "2024-01-01T12:00:00.000000Z",
-        "updated_at": "2024-01-02T13:00:00.000000Z"
-    },
-    "links": {
-        "self": "/api/v1/company/vacancies/comments/1"
-    }
-}
-```
-
-**Error (403):** `{ "message": "Forbidden" }` — Comment does not belong to a vacancy of your company.
-**Error (404):** `{ "message": "Comment not found." }`
-**Error (422):** Validation error.
-
----
-
-### Delete vacancy comment
-
-|            |                                         |
-|------------|-----------------------------------------|
-| **Method** | `DELETE`                                |
-| **Path**   | `/company/vacancies/comments/{comment}` |
-| **Auth**   | Bearer token + company role             |
-
-**URL parameters:**
-
-- `comment` (number): The comment ID.
-
-**Success (200):**
-`{ "message": "Comment deleted successfully.", "links": { "self": "/api/v1/company/vacancies/comments/1" } }`
-
-**Error (403):** `{ "message": "Forbidden" }` — Comment does not belong to a vacancy of your company.
-**Error (404):** `{ "message": "Comment not found." }`
 
 [↑ Back to index](#index)
 
@@ -1092,7 +967,8 @@ Students can view and update their own profile (user fields + student_profile).
 
 Returns the authenticated student's full profile including experiences, tags, languages, and preferences.
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -1137,6 +1013,8 @@ Returns the authenticated student's full profile including experiences, tags, la
 }
 ```
 
+</details>
+
 ---
 
 ### Update student profile
@@ -1149,7 +1027,8 @@ Returns the authenticated student's full profile including experiences, tags, la
 
 Update user fields and/or student profile fields. Only include fields you want to change.
 
-**Request body (all optional):**
+<details>
+<summary><strong>Request body (all optional)</strong></summary>
 
 ```json
 {
@@ -1171,6 +1050,8 @@ Update user fields and/or student profile fields. Only include fields you want t
 }
 ```
 
+</details>
+
 | Field                | Type           | Notes                                   |
 |----------------------|----------------|-----------------------------------------|
 | first_name           | string         | Max 100                                 |
@@ -1189,114 +1070,12 @@ Update user fields and/or student profile fields. Only include fields you want t
 | exclude_demographics | boolean        |                                         |
 | exclude_location     | boolean        |                                         |
 
-**Success (200):** `{ "message": "Profile updated successfully.", "data": <full profile>, "links": {...} }`
+<details>
+<summary><strong>Success (200) – Response body</strong></summary>
 
----
+`{ "message": "Profile updated successfully.", "data": <full profile>, "links": {...} }`
 
-### View student profile (by ID)
-
-**Allowed roles:** Coordinator, Company user
-Coordinators and company users can view any student's full profile including experiences, tags, languages, and
-preferences.
-
-|            |                                            |
-|------------|--------------------------------------------|
-| **Method** | `GET`                                      |
-| **Path**   | `/student/{student}`                       |
-| **Auth**   | Bearer token + coordinator or company role |
-
-**URL parameters:**
-
-- `student` (number): The student's user ID.
-
-**Success (200):**
-
-```json
-{
-    "data": {
-        "id": 1,
-        "first_name": "John",
-        "middle_name": null,
-        "last_name": "Doe",
-        "email": "john.doe@example.com",
-        "profile_photo_url": null,
-        "student_profile": {
-            "id": 1,
-            "user_id": 1,
-            "headline": "Junior Developer",
-            "bio": "Passionate about coding...",
-            "address_line": "Main Street 1",
-            "postal_code": "1234AB",
-            "city": "Amsterdam",
-            "country": "Netherlands",
-            "searching_status": "active",
-            "exclude_demographics": false,
-            "exclude_location": false
-        },
-        "experiences": [
-            {
-                "id": 1,
-                "user_id": 1,
-                "title": "Intern",
-                "company_name": "Acme Corp",
-                "start_date": "2024-01-01",
-                "end_date": "2024-06-30",
-                "description": "Worked on backend systems"
-            }
-        ],
-        "tags": [
-            {
-                "id": 1,
-                "user_id": 1,
-                "tag_id": 5,
-                "weight": 3,
-                "tag": {
-                    "id": 5,
-                    "name": "PHP",
-                    "tag_type": "skill"
-                }
-            }
-        ],
-        "languages": [
-            {
-                "id": 1,
-                "user_id": 1,
-                "language_id": 1,
-                "language_level_id": 2,
-                "language": {
-                    "id": 1,
-                    "name": "English"
-                },
-                "language_level": {
-                    "id": 2,
-                    "name": "Intermediate"
-                }
-            }
-        ],
-        "preferences": {
-            "id": 1,
-            "user_id": 1,
-            "desired_role_tag_id": 2,
-            "hours_per_week_min": 32,
-            "hours_per_week_max": 40,
-            "max_distance_km": 50,
-            "has_drivers_license": true,
-            "notes": "Prefer remote work",
-            "desired_role_tag": {
-                "id": 2,
-                "name": "Backend Developer",
-                "tag_type": "role"
-            }
-        }
-    },
-    "links": {
-        "self": "/api/v1/student/1"
-    }
-}
-```
-
-**Error (403):** `{ "message": "Unauthorized" }` – User is not a coordinator or company user.
-**Error (404):** `{ "message": "User is not a student" }` – The specified user exists but is not a student.
+</details>
 
 [↑ Back to index](#index)
 
@@ -1312,7 +1091,8 @@ preferences.
 | **Path**   | `/student/preferences`      |
 | **Auth**   | Bearer token + student role |
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -1335,6 +1115,8 @@ preferences.
 }
 ```
 
+</details>
+
 ---
 
 ### Update student preferences
@@ -1345,7 +1127,8 @@ preferences.
 | **Path**   | `/student/preferences`      |
 | **Auth**   | Bearer token + student role |
 
-**Request body (all optional):**
+<details>
+<summary><strong>Request body (all optional)</strong></summary>
 
 ```json
 {
@@ -1357,6 +1140,8 @@ preferences.
     "notes": "Prefer remote work"
 }
 ```
+
+</details>
 
 | Field               | Type           | Notes                 |
 |---------------------|----------------|-----------------------|
@@ -1383,7 +1168,8 @@ preferences.
 | **Path**   | `/student/experiences`      |
 | **Auth**   | Bearer token + student role |
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -1403,6 +1189,8 @@ preferences.
 }
 ```
 
+</details>
+
 ---
 
 ### Create student experience
@@ -1413,7 +1201,8 @@ preferences.
 | **Path**   | `/student/experiences`      |
 | **Auth**   | Bearer token + student role |
 
-**Request body:**
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
@@ -1425,6 +1214,8 @@ preferences.
 }
 ```
 
+</details>
+
 | Field        | Type   | Required | Notes                 |
 |--------------|--------|----------|-----------------------|
 | title        | string | Yes      | Max 255               |
@@ -1433,7 +1224,12 @@ preferences.
 | end_date     | date   | No       | Must be >= start_date |
 | description  | string | No       |                       |
 
-**Success (201):** `{ "message": "Experience created successfully.", "data": <experience>, "links": {...} }`
+<details>
+<summary><strong>Success (201) – Response body</strong></summary>
+
+`{ "message": "Experience created successfully.", "data": <experience>, "links": {...} }`
+
+</details>
 
 ---
 
@@ -1445,7 +1241,8 @@ preferences.
 | **Path**   | `/student/experiences/{id}` |
 | **Auth**   | Bearer token + student role |
 
-**Request body (all optional):**
+<details>
+<summary><strong>Request body (all optional)</strong></summary>
 
 ```json
 {
@@ -1457,7 +1254,15 @@ preferences.
 }
 ```
 
-**Success (200):** `{ "message": "Experience updated successfully.", "data": <experience>, "links": {...} }`
+</details>
+
+<details>
+<summary><strong>Success (200) – Response body</strong></summary>
+
+`{ "message": "Experience updated successfully.", "data": <experience>, "links": {...} }`
+
+</details>
+
 **Error (404):** Experience not found or not owned by you.
 
 ---
@@ -1487,7 +1292,8 @@ preferences.
 | **Path**   | `/student/languages`        |
 | **Auth**   | Bearer token + student role |
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -1512,6 +1318,8 @@ preferences.
 }
 ```
 
+</details>
+
 ---
 
 ### Sync student languages
@@ -1524,7 +1332,8 @@ preferences.
 
 Replaces all languages for the student. Send the complete list of languages.
 
-**Request body:**
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
@@ -1542,6 +1351,8 @@ Replaces all languages for the student. Send the complete list of languages.
 }
 ```
 
+</details>
+
 | Field                         | Type    | Required | Notes                                 |
 |-------------------------------|---------|----------|---------------------------------------|
 | languages                     | array   | Yes      | List of language entries              |
@@ -1549,7 +1360,12 @@ Replaces all languages for the student. Send the complete list of languages.
 | languages.*.language_level_id | number  | Yes      | Must exist in `language_levels` table |
 | languages.*.is_active         | boolean | No       | Defaults to true                      |
 
-**Success (200):** `{ "message": "Languages updated successfully.", "data": [...], "links": {...} }`
+<details>
+<summary><strong>Success (200) – Response body</strong></summary>
+
+`{ "message": "Languages updated successfully.", "data": [...], "links": {...} }`
+
+</details>
 
 [↑ Back to index](#index)
 
@@ -1565,7 +1381,8 @@ Replaces all languages for the student. Send the complete list of languages.
 | **Path**   | `/student/tags`             |
 | **Auth**   | Bearer token + student role |
 
-**Success (200):**
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
 ```json
 {
@@ -1587,6 +1404,8 @@ Replaces all languages for the student. Send the complete list of languages.
 }
 ```
 
+</details>
+
 ---
 
 ### Sync student tags
@@ -1600,7 +1419,8 @@ Replaces all languages for the student. Send the complete list of languages.
 Replaces all tags/skills for the student. Send the complete list of tags. This is a **sync** operation—existing tags are
 removed and replaced with the new list provided.
 
-**Request body:**
+<details>
+<summary><strong>Request body (JSON)</strong></summary>
 
 ```json
 {
@@ -1624,402 +1444,22 @@ removed and replaced with the new list provided.
 }
 ```
 
-| Field            | Type    | Required | Notes                                  |
-|------------------|---------|----------|----------------------------------------|
-| tags             | array   | Yes      | List of tag entries                    |
-| tags.*.tag_id    | number  | Yes      | Must exist in `tags` table             |
-| tags.*.is_active | boolean | No       | Defaults to true                       |
-| tags.*.weight    | number  | No       | 0–100, represents proficiency/priority |
-
-#### Understanding the `weight` field
-
-The `weight` field (0–100) represents the student's **proficiency level** for that skill/tag:
-
-| Weight Range | Proficiency Level |
-|--------------|-------------------|
-| 90–100       | Expert            |
-| 70–89        | Advanced          |
-| 50–69        | Intermediate      |
-| 30–49        | Beginner          |
-| 0–29         | Learning          |
-
-This weight is used by the matching algorithm to better match students with vacancies. A higher weight indicates
-stronger proficiency.
-
-**Example – Adding skills with proficiency levels:**
-
-```json
-{
-    "tags": [
-        {
-            "tag_id": 19,
-            "is_active": true,
-            "weight": 95
-        },
-        {
-            "tag_id": 1,
-            "is_active": true,
-            "weight": 90
-        },
-        {
-            "tag_id": 13,
-            "is_active": true,
-            "weight": 60
-        },
-        {
-            "tag_id": 4,
-            "is_active": true,
-            "weight": 40
-        }
-    ]
-}
-```
-
-In this example, the student is an expert in tag 19 (e.g., Laravel), advanced in tag 1 (e.g., PHP), intermediate in tag
-13 (e.g., React), and a beginner in tag 4 (e.g., Python).
-
-**Success (200):**
-
-```json
-{
-    "message": "Tags updated successfully.",
-    "data": [
-        {
-            "tag_id": 19,
-            "is_active": true,
-            "weight": 95,
-            "tag": {
-                "id": 19,
-                "name": "Laravel",
-                "tag_type": "skill"
-            }
-        },
-        {
-            "tag_id": 1,
-            "is_active": true,
-            "weight": 90,
-            "tag": {
-                "id": 1,
-                "name": "PHP",
-                "tag_type": "skill"
-            }
-        }
-    ],
-    "links": {
-        "self": "https://<your-api-host>/api/v1/student/tags"
-    }
-}
-```
-
-**Major:** A student may have **at most one** tag whose `tag_type` is "major". If the sync payload includes more than one major (by `tag_id`), the API returns **422** with message: `"You may select at most one major."`
-
-**Error responses:**
-
-| Status | Reason                                                       |
-|--------|--------------------------------------------------------------|
-| 401    | Not authenticated (missing or invalid JWT)                   |
-| 403    | User is not a student                                        |
-| 422    | Validation error (invalid tag_id, weight out of range, more than one major, etc.) |
-
-<details>
-<summary><strong>Postman example</strong></summary>
-
-1. **Login as a student** to get a JWT token:
-   ```
-   POST /api/v1/auth/login
-   Content-Type: application/json
-
-   { "email": "student@example.com", "password": "password123" }
-   ```
-
-2. **Sync tags** with the token:
-   ```
-   PUT /api/v1/student/tags
-   Authorization: Bearer <your-jwt-token>
-   Content-Type: application/json
-   Accept: application/json
-
-   {
-     "tags": [
-       { "tag_id": 1, "is_active": true, "weight": 90 },
-       { "tag_id": 2, "is_active": true, "weight": 85 },
-       { "tag_id": 19, "is_active": true, "weight": 95 }
-     ]
-   }
-   ```
-
-3. **Verify** by listing tags:
-   ```
-   GET /api/v1/student/tags
-   Authorization: Bearer <your-jwt-token>
-   Accept: application/json
-   ```
-
 </details>
 
-[↑ Back to index](#index)
-
----
-
-## Vacancies with match scores (student)
-
-Students can view vacancies (from active companies only) with a **match score** (0–100%) and **subscores by category** (skill, industry, major, trait), each with a short explanation. The list is **sorted by overall match score descending** (best matches first). The score is computed using **cosine similarity** over the student’s tags and the vacancy’s requirement tags. When computing the score and subscores, the algorithm uses at most **6 skills** and **4 traits** per student and per vacancy (other tag types have their own limits; see config). Each subscore is the same metric over one tag type, with an explanation describing why the user got that score.
-
-### List vacancies with match scores (student)
-
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/vacancies-with-scores` |
-| **Auth** | Bearer token + student role |
-
-**Query parameters:**
-
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| per_page | number | 15 | Pagination size |
-| page | number | 1 | Page number |
-| industry_tag_id | number | — | Optional. Restrict to vacancies from companies with this `industry_tag_id`. Use **GET /tags?tag_type=industry** for the list of industries. |
-
-**Success (200):**
-```json
-{
-  "data": [
-    {
-      "vacancy": {
-        "id": 1,
-        "company_id": 1,
-        "location_id": null,
-        "title": "Backend developer",
-        "hours_per_week": 40,
-        "description": "...",
-        "status": "open",
-        "created_at": "2025-03-10T12:00:00+00:00",
-        "updated_at": "2025-03-10T12:00:00+00:00",
-        "company": { "id": 1, "name": "Acme Corp" }
-      },
-      "match_score": 72.5,
-      "subscores": {
-        "skill": { "score": 75, "explanation": "Skill match: 75% — 3 of 4 required skills match your profile (PHP, Laravel, React)." },
-        "trait": { "score": 50, "explanation": "Trait match: 50% — 1 of 2 required traits match your profile (Team Player)." }
-      }
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 1
-  },
-  "links": { "self": "..." }
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| vacancy | Vacancy summary (id, title, company, etc.) |
-| match_score | Overall tag-based match 0–100% (cosine similarity) |
-| subscores | Per-category scores: **skill** and **trait** only. Each has `score` (0–100) and `explanation` (short text). The percentage is **weighted** by how well your tag strengths align with the vacancy’s requirements (cosine similarity), so e.g. 2 of 6 required tags matching can yield more than 33% when those matches have high weight/importance. |
-
-**Error (401/403):** Not authenticated or not a student.
+| Field            | Type    | Required | Notes                      |
+|------------------|---------|----------|----------------------------|
+| tags             | array   | Yes      | List of tag entries        |
+| tags.*.tag_id    | number  | Yes      | Must exist in `tags` table |
+| tags.*.is_active | boolean | No       | Defaults to true           |
+| tags.*.weight    | number  | No       | 0–100                     |
 
 [↑ Back to index](#index)
 
 ---
 
-## Top 3 matches (student)
-
-Returns the **top 3** best-matching vacancies for the authenticated student using the tag-based matching algorithm.
-
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/vacancies/top-matches` |
-| **Auth** | Bearer token + student role |
-
-**Success (200):**
-```json
-{
-  "data": [
-    {
-      "vacancy_id": 12,
-      "title": "Junior DevOps Engineer",
-      "company": "Acme Corp",
-      "score": 91
-    }
-  ]
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| vacancy_id | Vacancy ID |
-| title | Vacancy title |
-| company | Company name |
-| score | Final score (0–100) |
-
-**Error (401/403):** Not authenticated or not a student.
-
 [↑ Back to index](#index)
 
 ---
-
-## All vacancies with scores (student)
-
-Returns **all eligible vacancies** (active companies) with score details, sorted by score descending.
-
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/vacancies/with-scores` |
-| **Auth** | Bearer token + student role |
-
-**Success (200):**
-```json
-{
-  "data": [
-    {
-      "vacancy_id": 12,
-      "title": "Junior DevOps Engineer",
-      "company": "Acme Corp",
-      "score": 91,
-      "must_have_misses": [34],
-      "breakdown": {
-        "s_mh": 0.95,
-        "s_nth": 0.8,
-        "s_tags": 0.92,
-        "penalty": 0.05
-      }
-    }
-  ]
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| score | Final score (0–100) |
-| must_have_misses | Array of missing must-have `tag_id`s |
-| breakdown.s_mh | Must-have subscore |
-| breakdown.s_nth | Nice-to-have subscore |
-| breakdown.s_tags | Combined score before penalty |
-| breakdown.penalty | Missing must-have penalty |
-
-**Error (401/403):** Not authenticated or not a student.
-
-[↑ Back to index](#index)
-
----
-
-## Vacancy score detail (student)
-
-Provides a **single vacancy score explanation** that students can read to understand what is missing and how to improve.
-
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/student/vacancies/{vacancy}/detail` |
-| **Auth** | Bearer token + student role |
-
-**Path parameters:**
-
-| Param | Type | Description |
-|-------|------|-------------|
-| vacancy | number | Vacancy ID |
-
-**Success (200):**
-```json
-{
-  "data": {
-    "vacancy": {
-      "id": 12,
-      "title": "Junior DevOps Engineer",
-      "company": "Acme Corp"
-    },
-    "score": 74,
-    "breakdown": {
-      "s_mh": 0.81,
-      "s_nth": 0.65,
-      "s_tags": 0.778,
-      "penalty": 0.04
-    },
-    "must_have_misses": [
-      { "tag_id": 37, "tag_name": "Kubernetes" }
-    ],
-    "nice_to_have_misses": [
-      { "tag_id": 45, "tag_name": "Ansible", "importance": 3 }
-    ],
-    "human_explanation": {
-      "summary": "You match this vacancy with a score of 74. You meet 4/5 must-have tags and 2/3 nice-to-have tags. Missing 1 must-have tag lowers your score the most.",
-      "what_you_match_well": ["Docker", "CI/CD", "Git"],
-      "what_to_improve_next": ["Kubernetes", "Ansible"],
-      "tips": [
-        "Focus first on missing must-have tags, especially high-importance ones (4-5).",
-        "Add missing skills to your profile only if you can realistically perform them.",
-        "Improve existing tag weights by gaining project or internship experience in those skills."
-      ]
-    },
-    "tags": {
-      "all": [
-        {
-          "tag_id": 37,
-          "tag_name": "Kubernetes",
-          "requirement_type": "must_have",
-          "importance": 5,
-          "student_has_tag": false,
-          "student_weight": null,
-          "match_multiplier": 0,
-          "weighted_contribution": 0
-        }
-      ]
-    }
-  }
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| must_have_misses | Missing must-have tags with id + name |
-| nice_to_have_misses | Missing nice-to-have tags with id + name + importance |
-| human_explanation.summary | Student-readable summary of why score is high/low |
-| human_explanation.what_to_improve_next | Prioritized missing tags to improve score |
-| tags.all | Tag-by-tag technical breakdown of contribution |
-
-**Error (404):** Vacancy not found or vacancy not visible to students (e.g. company not active).  
-**Error (401/403):** Not authenticated or not a student.
-
-[↑ Back to index](#index)
-
----
-
-## Matching formula correction (important)
-
-To avoid confusion: for **student matching routes**, the scoring is **not cosine similarity**.
-
-The following student routes use the weighted rules-based algorithm implemented in `VacancyMatchingService`:
-
-- `GET /student/vacancies/top-matches`
-- `GET /student/vacancies/with-scores`
-- `GET /student/vacancies/{vacancy}/detail`
-- `GET /student/vacancies-with-scores`
-
-### Actual student scoring model
-
-- `m_k = 1 + (w_k - 3) / 20` when the student has a tag, else `0`
-- `i_hat = importance / 5`
-- `S_MH` = weighted average over must-have tags (or `1.0` when none)
-- `S_NTH` = weighted average over nice-to-have tags (or `1.0` when none)
-- `S_tags = 0.8 * S_MH + 0.2 * S_NTH`
-- `penalty = (missing_must_haves / total_must_haves) * 0.25`
-- `final_score = clamp((S_tags - penalty) * 100, 0, 100)`
-
-This means older text in this document that mentions cosine similarity for student matching should be treated as historical/outdated.
-
-> Note: the coordinator route `GET /coordinator/students/{user}/vacancies-with-scores` is currently implemented with `StudentVacancyTagMatchService`, which is a different scoring implementation.
-
-[↑ Back to index](#index)
-
----
-
 ## Public data (no auth)
 
 These endpoints return only **active** (coordinator-approved) companies and their vacancies. Use them for student/public
@@ -2163,7 +1603,7 @@ All routes below require:
 
 1. **Valid JWT** in `Authorization: Bearer <token>`.
 2. **Logged-in user role = coordinator.**
-   Otherwise you get **403** (e.g. “Forbidden. Coordinator role required.” or “This action is unauthorized.”).
+   Otherwise you get **403** (e.g. "Forbidden. Coordinator role required." or "This action is unauthorized.").
 
 [↑ Back to index](#index)
 
@@ -2344,11 +1784,10 @@ Manage **student** and **company** users. For company users, the company must ex
 | search                | string  | —       | Search in first name, last name, or email (partial match)                                                                                                       |
 | per_page              | number  | 15      | Pagination size                                                                                                                                                 |
 | active_companies_only | boolean | false   | If `1` or `true`, only return students and company users whose company is active (useful when listing users for display). Omit to see all users for management. |
-| assigned_to_me        | boolean | false   | If `1` or `true` **and** `role=student`, only return students currently assigned to the logged-in coordinator.                                                  |
 
 **Example:** `GET /coordinator/users?role=student&search=jan&per_page=10`
 **Example:** `GET /coordinator/users?role=student&per_page=10`
-**Example (only active companies’ users):** `GET /coordinator/users?active_companies_only=1`
+**Example (only active companies' users):** `GET /coordinator/users?active_companies_only=1`
 
 <details>
 <summary><strong>Success (200) – Response body (JSON)</strong></summary>
@@ -2659,133 +2098,8 @@ Omit `password` or send `null` to leave it unchanged.
 | **Method** | `DELETE`                  |
 | **Path**   | `/coordinator/users/{id}` |
 
-Only **students** can be deleted. Attempting to delete a coordinator or company user returns **403**.
-Deleting a student also **cascades** to their related data (profile, experiences, tags, languages, preferences,
-favorites, saved vacancies, messages, conversations, and other student-specific records), either removing those rows or
-nulling references where configured.
-
 **Success (200):** `{ "message": "User deleted successfully." }`
-**Error (403):** `{ "message": "Alleen studenten kunnen verwijderd worden" }`
 **Error (404):** `{ "message": "User not found." }`
-
-[↑ Back to index](#index)
-
----
-
-## Student–coordinator assignments (coordinator)
-
-Coordinators can manage which students are assigned to which coordinators.
-Assignments are stored in the `student_coordinator_assignments` table and are **historical**: when a student is
-unassigned, the row is kept but `unassigned_at` is set.
-The `GET /coordinator/users?role=student&assigned_to_me=1` filter only considers **active** assignments (`unassigned_at`
-is `null`).
-
-### Assign student to a coordinator
-
-Create a new assignment between a student and a coordinator. You can assign to **yourself** or to **another coordinator
-**.
-
-|            |                                               |
-|------------|-----------------------------------------------|
-| **Method** | `POST`                                        |
-| **Path**   | `/coordinator/users/{student_id}/assignments` |
-| **Auth**   | Bearer token + coordinator role               |
-
-**Request body (JSON):**
-
-```json
-{
-    "coordinator_user_id": 5,
-    "note": "Moving this student to another coordinator."
-}
-```
-
-| Field               | Type   | Required | Notes                                              |
-|---------------------|--------|----------|----------------------------------------------------|
-| coordinator_user_id | number | Yes      | Must exist in `users` and have role `coordinator`. |
-| note                | string | No       | Optional internal note stored on the assignment.   |
-
-**Behavior:**
-
-- Fails with `422` if the path user is **not** a student.
-- Fails with `422` if `coordinator_user_id` is not a coordinator.
-- Creates a new `student_coordinator_assignments` row with:
-    - `student_user_id = {student_id}`
-    - `coordinator_user_id = coordinator_user_id`
-    - `assigned_by_user_id = <logged-in coordinator id>`
-    - `assigned_at = now`
-    - `unassigned_at = null`
-
-**Success (201):**
-
-```json
-{
-    "message": "Coordinator assigned to student successfully.",
-    "data": {
-        "id": 1,
-        "student_user_id": 10,
-        "coordinator_user_id": 5,
-        "assigned_by_user_id": 3,
-        "assigned_at": "2025-03-10T12:00:00+00:00",
-        "unassigned_at": null,
-        "note": "Moving this student to another coordinator."
-    }
-}
-```
-
----
-
-### Unassign student from a coordinator
-
-Marks the latest active assignment between a student and a coordinator as **unassigned** by setting `unassigned_at`.
-
-|            |                                                 |
-|------------|-------------------------------------------------|
-| **Method** | `POST`                                          |
-| **Path**   | `/coordinator/users/{student_id}/unassignments` |
-| **Auth**   | Bearer token + coordinator role                 |
-
-**Request body (JSON):**
-
-```json
-{
-    "coordinator_user_id": 5,
-    "note": "Student graduated."
-}
-```
-
-| Field               | Type   | Required | Notes                                                                                           |
-|---------------------|--------|----------|-------------------------------------------------------------------------------------------------|
-| coordinator_user_id | number | No       | If omitted, defaults to the logged-in coordinator’s user id. Must exist in `users` if provided. |
-| note                | string | No       | Optional note to update on the assignment.                                                      |
-
-**Behavior:**
-
-- Fails with `422` if the path user is **not** a student.
-- Looks up the most recent assignment for:
-    - `student_user_id = {student_id}`
-    - `coordinator_user_id = coordinator_user_id` (or current coordinator if omitted)
-    - `unassigned_at IS NULL`
-- If no active assignment is found, returns **404**:
-    - `{ "message": "Active assignment not found." }`
-- Otherwise sets `unassigned_at = now` and, if provided, updates `note`.
-
-**Success (200):**
-
-```json
-{
-    "message": "Student unassigned from coordinator successfully.",
-    "data": {
-        "id": 1,
-        "student_user_id": 10,
-        "coordinator_user_id": 5,
-        "assigned_by_user_id": 3,
-        "assigned_at": "2025-03-10T12:00:00+00:00",
-        "unassigned_at": "2025-03-11T09:00:00+00:00",
-        "note": "Student graduated."
-    }
-}
-```
 
 [↑ Back to index](#index)
 
@@ -2875,60 +2189,6 @@ Coordinators can list all vacancies across companies with optional filtering.
 
 ---
 
-## Student vacancies with match scores (coordinator)
-
-Coordinators can view the same **vacancies with match scores** list for a given student (as if the student had called the student endpoint). Response shape is identical: vacancies from active companies, sorted by match score descending, with overall score and subscores (**skill** and **trait** only) each with score and explanation. The same **major** and **industry_tag_id** filtering applies (see [Vacancies with match scores (student)](#vacancies-with-match-scores-student)).
-
-### List vacancies with match scores for a student (coordinator)
-
-| | |
-|---|---|
-| **Method** | `GET` |
-| **Path** | `/coordinator/students/{user}/vacancies-with-scores` |
-| **Auth** | Bearer token + coordinator role |
-
-**Path parameters:** `user` — user ID of the student.
-
-**Query parameters:** `per_page` (number, default 15), `page` (number, default 1), `industry_tag_id` (number, optional — restrict to companies with this industry tag).
-
-**Success (200):** Same shape as [List vacancies with match scores (student)](#list-vacancies-with-match-scores-student): `data` (array of vacancy + match_score + subscores with **skill** and **trait** only), `meta` (pagination), `links`.
-
-**Error (404):** `{ "message": "User is not a student." }` when the given user is not a student.
-
-### Add comment to vacancy
-
-Coordinators can add comments to vacancies. Comments are visible to all users with access to the vacancy (students,
-company users, coordinators).
-
-|            |                                        |
-|------------|----------------------------------------|
-| **Method** | `POST`                                 |
-| **Path**   | `/coordinator/vacancies/{id}/comments` |
-| **Auth**   | Bearer token + coordinator role        |
-
-<details>
-<summary><strong>Request body (JSON)</strong></summary>
-
-```json
-{
-    "comment": "Looking for a candidate with strong PHP skills."
-}
-```
-
-</details>
-
-| Field   | Type   | Required | Notes   |
-|---------|--------|----------|---------|
-| comment | string | Yes      | Max 500 |
-
-**Success (201):** `{ "data": <comment object>, "links": { "self": "..." } }`  
-**Error (404):** Vacancy not found.  
-**Error (403):** User is not a coordinator.
-
-[↑ Back to index](#index)
-
----
-
 ## Recommended flow for coordinators
 
 1. **Register** →`POST /auth/register/coordinator`
@@ -2950,8 +2210,7 @@ companies appear in `GET /companies` and `GET /vacancies`, and only their users 
 
 ## Testing with Postman
 
-Use **Base URL** `http://localhost/api/v1` (or `http://127.0.0.1:8000/api/v1` if using `php artisan serve`). Set header*
-*Content-Type:** `application/json` on all requests.
+Use **Base URL** `http://localhost/api/v1` (or `http://127.0.0.1:8000/api/v1` if using `php artisan serve`). Set header **Content-Type:** `application/json` on all requests.
 php -S 127.0.0.1:8001 -t public
 
 ### 1. Get a company user token
@@ -2977,7 +2236,7 @@ Copy `token` from the response.
 3. `POST /coordinator/companies` with **Authorization: Bearer &lt;token&gt;** → create company, note `data.id`.
 4. `POST /coordinator/users` with **Authorization: Bearer &lt;token&gt;** and body: `role: "company"`, `company_id` (id
    from step 3), email, password, first_name, last_name.
-5. `POST /auth/login` with that company user’s email/password → copy `token`.
+5. `POST /auth/login` with that company user's email/password → copy `token`.
 
 ### 2. Test tags and vacancies
 
@@ -3013,7 +2272,7 @@ Use **Authorization: Bearer** with the company user token for all requests below
 }
 ```
 
-**Example with new tags** (creates tags if they don’t exist):
+**Example with new tags** (creates tags if they don't exist):
 
 ```json
 {
