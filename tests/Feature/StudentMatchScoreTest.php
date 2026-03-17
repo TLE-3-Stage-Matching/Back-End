@@ -151,6 +151,60 @@ class StudentMatchScoreTest extends TestCase
             ->assertJsonValidationErrors(['tags']);
     }
 
+    public function test_vacancy_create_with_importance_above_five_returns_422(): void
+    {
+        $company = Company::create(['name' => 'Test Co', 'is_active' => true]);
+        $user = User::factory()->company()->create(['email' => 'hr2@test.com']);
+        CompanyUser::create(['user_id' => $user->id, 'company_id' => $company->id, 'job_title' => 'HR']);
+        $token = JWTAuth::fromUser($user);
+
+        $skillTag = Tag::create(['name' => 'Laravel', 'tag_type' => 'skill', 'is_active' => true]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ])->postJson('/api/v1/company/vacancies', [
+            'title' => 'Backend role',
+            'tags' => [
+                ['id' => $skillTag->id, 'requirement_type' => 'skill', 'importance' => 6],
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['tags.0.importance']);
+    }
+
+    public function test_vacancy_create_without_importance_defaults_to_three(): void
+    {
+        $company = Company::create(['name' => 'Test Co', 'is_active' => true]);
+        $user = User::factory()->company()->create(['email' => 'hr3@test.com']);
+        CompanyUser::create(['user_id' => $user->id, 'company_id' => $company->id, 'job_title' => 'HR']);
+        $token = JWTAuth::fromUser($user);
+
+        $skillTag = Tag::create(['name' => 'Laravel', 'tag_type' => 'skill', 'is_active' => true]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ])->postJson('/api/v1/company/vacancies', [
+            'title' => 'Backend role',
+            'tags' => [
+                ['id' => $skillTag->id, 'requirement_type' => 'skill'],
+            ],
+        ]);
+
+        $response->assertStatus(201);
+
+        $vacancyId = (int) $response->json('data.id');
+
+        $this->assertDatabaseHas('vacancy_requirements', [
+            'vacancy_id' => $vacancyId,
+            'tag_id' => $skillTag->id,
+            'requirement_type' => 'skill',
+            'importance' => 3,
+        ]);
+    }
+
     public function test_student_sync_tags_with_two_majors_returns_422(): void
     {
         $student = User::factory()->student()->create();
@@ -165,13 +219,60 @@ class StudentMatchScoreTest extends TestCase
             'Accept' => 'application/json',
         ])->putJson('/api/v1/student/tags', [
             'tags' => [
-                ['tag_id' => $major1->id, 'is_active' => true, 'weight' => 80],
-                ['tag_id' => $major2->id, 'is_active' => true, 'weight' => 70],
+                ['tag_id' => $major1->id, 'is_active' => true, 'weight' => 5],
+                ['tag_id' => $major2->id, 'is_active' => true, 'weight' => 4],
             ],
         ]);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['tags']);
+    }
+
+    public function test_student_sync_tags_weight_above_five_returns_422(): void
+    {
+        $student = User::factory()->student()->create();
+        StudentProfile::create(['user_id' => $student->id]);
+        $token = JWTAuth::fromUser($student);
+
+        $skillTag = Tag::create(['name' => 'PHP', 'tag_type' => 'skill', 'is_active' => true]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ])->putJson('/api/v1/student/tags', [
+            'tags' => [
+                ['tag_id' => $skillTag->id, 'is_active' => true, 'weight' => 6],
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['tags.0.weight']);
+    }
+
+    public function test_student_sync_tags_without_weight_defaults_to_three(): void
+    {
+        $student = User::factory()->student()->create();
+        StudentProfile::create(['user_id' => $student->id]);
+        $token = JWTAuth::fromUser($student);
+
+        $skillTag = Tag::create(['name' => 'PHP', 'tag_type' => 'skill', 'is_active' => true]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ])->putJson('/api/v1/student/tags', [
+            'tags' => [
+                ['tag_id' => $skillTag->id, 'is_active' => true],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('student_tags', [
+            'student_user_id' => $student->id,
+            'tag_id' => $skillTag->id,
+            'weight' => 3,
+        ]);
     }
 
     public function test_vacancies_with_scores_industry_tag_id_filters_by_company_industry(): void
