@@ -2733,3 +2733,85 @@ Use **Authorization: Bearer** with the company user token for all requests below
 
 [↑ Back to index](#index)
 
+---
+
+## Coordinator tag management
+
+Coordinators can manage the master tag catalogue over HTTP. These routes are **coordinator-only** and are separate from `GET /tags`, which remains the shared authenticated listing endpoint.
+
+#### List tags (coordinator)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/coordinator/tags` |
+| **Auth** | Bearer token + coordinator role |
+
+**Query parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| search | string | Optional. Search by tag name (partial match). |
+| tag_type | string | Optional. Filter by type (e.g. `skill`, `trait`, `industry`, `major`). |
+| is_active | boolean | Optional. Filter by active state. |
+| per_page | number | Optional. Pagination size (default 15). |
+
+#### Create tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/coordinator/tags` |
+| **Auth** | Bearer token + coordinator role |
+
+```json
+{
+  "name": "Platform Engineering",
+  "tag_type": "industry",
+  "is_active": true
+}
+```
+
+- `is_active` defaults to `true` when omitted.
+- `name + tag_type` must be unique.
+
+#### Get tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/coordinator/tags/{tag}` |
+| **Auth** | Bearer token + coordinator role |
+
+#### Update tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `PUT` or `PATCH` |
+| **Path** | `/coordinator/tags/{tag}` |
+| **Auth** | Bearer token + coordinator role |
+
+```json
+{
+  "name": "Platform & DevOps",
+  "is_active": false
+}
+```
+
+#### Delete tag (coordinator)
+
+| | |
+|---|---|
+| **Method** | `DELETE` |
+| **Path** | `/coordinator/tags/{tag}` |
+| **Auth** | Bearer token + coordinator role |
+
+Unused tags can be deleted. If a tag is already referenced by student tags, vacancy requirements, company industry tags, student preferences, or match factors, the API returns **422** and asks the coordinator to deactivate the tag instead.
+
+**422 example:**
+```json
+{
+  "message": "Tag is in use and cannot be deleted. Deactivate it instead by setting is_active=false."
+}
+```
+

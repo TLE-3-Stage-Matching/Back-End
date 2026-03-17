@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\VacancyController;
 use App\Http\Controllers\Api\Student\StudentFavoriteCompanyController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Student\StudentProfileViewController;
+use App\Http\Controllers\Api\Coordinator\CoordinatorTagController;
 
 Route::prefix('v1')->group(function () {
     // Public: register as stage coordinator
@@ -109,7 +110,8 @@ Route::prefix('v1')->group(function () {
             Route::post('coordinator/users/{student}/assignments', [StageCoordinatorUserController::class, 'assignCoordinator']);
             Route::post('coordinator/users/{student}/unassignments', [StageCoordinatorUserController::class, 'unassignCoordinator']);
             Route::post('coordinator/vacancies/{vacancy}/comments', [CoordinatorVacancyController::class, 'storeComment']);
-            
+            Route::apiResource('coordinator/tags', CoordinatorTagController::class);
+
         });
     });
 });
