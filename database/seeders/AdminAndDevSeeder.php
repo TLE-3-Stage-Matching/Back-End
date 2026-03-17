@@ -18,7 +18,7 @@ class AdminAndDevSeeder extends Seeder
     {
         // Admin account
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@backend.com'],
             [
                 'role' => UserRole::Admin,
                 'first_name' => 'Admin',
