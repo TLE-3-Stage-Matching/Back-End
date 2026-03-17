@@ -48,7 +48,7 @@ For conventions on updating this doc and adding new API functionality, see the i
 | **Coordinator** | Register & login; full CRUD on **companies** and on **users** (students + company users); list **vacancies** (all companies) with filters; list **vacancies with match scores** for a given student; **assign/unassign** students to coordinators; **add comments** to vacancies; list companies/users with filters. |
 | **Company user** | Login; view/update **own company**; view/update **own profile** (user + job title); full CRUD on **own company's vacancies** (create/update can add tags by id or create new tags inline; new tags are saved to the DB); **list/update/delete vacancy comments**. |
 | **Student** | Login; view/update **own profile** (user + student_profile); CRUD **experiences**; manage **preferences**, **languages**, and **tags/skills**; **favorite companies** (add/remove); **saved vacancies** (list/add/remove); **vacancy matching** (top-matches, with-scores, detail, vacancies-with-scores). |
-| **Any authenticated** | List **tags** (for vacancy forms); `GET /auth/me` (company users get `company_user` and `company` loaded); **view student profile by ID** (coordinator or company role). |
+| **Any authenticated** | List **tags** (for vacancy forms); List **languages** and **language levels**; `GET /auth/me` (company users get `company_user` and `company` loaded); **view student profile by ID** (coordinator or company role). |
 
 **Tags:** There is no standalone “create tag” endpoint. Tags are created **inline** when a company user creates or updates a vacancy by sending `{ "name": "...", "tag_type": "..." }` in the vacancy’s `tags` array; the backend uses `firstOrCreate` and persists new tags to the database.
 
@@ -72,6 +72,8 @@ For conventions on updating this doc and adding new API functionality, see the i
   - [My company (v2)](#my-company)
   - [My profile (v2)](#my-profile)
   - [Tags (v2)](#tags)
+  - [List languages (v2)](#languages)
+  - [List language levels (v2)](#list-language-levels)
   - [Vacancies (company) (v2)](#vacancies-company)
   - [Company vacancy comments (v2)](#company-vacancy-comments-v2)
 - [Students (v2)](#students)
@@ -669,6 +671,55 @@ Used when creating vacancies: company users can **select existing tags** (from t
       "created_at": "...",
       "updated_at": "..."
     }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+[↑ Back to index](#index)
+
+---
+
+## Languages
+
+Master list of all available languages. Use for student language selection (and any other dropdown that needs the full list).
+
+### List languages
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/languages` |
+| **Auth** | `X-API-KEY` + Bearer token required |
+
+**Success (200):**
+```json
+{
+  "data": [
+    { "id": 1, "name": "English" },
+    { "id": 2, "name": "Dutch" }
+  ],
+  "links": { "self": "..." }
+}
+```
+
+### List language levels
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/language-levels` |
+| **Auth** | `X-API-KEY` + Bearer token required |
+
+Master list of language proficiency levels (e.g. A1–C2). Use with `GET /languages` for the student sync-languages form.
+
+**Success (200):**
+```json
+{
+  "data": [
+    { "id": 1, "name": "A1" },
+    { "id": 2, "name": "A2" },
+    { "id": 3, "name": "B1" }
   ],
   "links": { "self": "..." }
 }
@@ -3099,6 +3150,8 @@ With a student JWT and **X-API-KEY** set:
 | GET | `/auth/me` | X-API-KEY + Bearer |
 | GET | `/student/{student}` | X-API-KEY + Bearer |
 | GET | `/tags` | X-API-KEY + Bearer |
+| GET | `/languages` | X-API-KEY + Bearer |
+| GET | `/language-levels` | X-API-KEY + Bearer |
 | GET / PATCH | `/company` | X-API-KEY + Bearer + company |
 | GET / PATCH | `/company/profile` | X-API-KEY + Bearer + company |
 | GET / POST | `/company/vacancies` | X-API-KEY + Bearer + company |

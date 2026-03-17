@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\StageCoordinatorUserController;
 use App\Http\Controllers\Api\Student\StudentMatchScoreController;
 use App\Http\Controllers\Api\Student\StudentProfileController;
 use App\Http\Controllers\Api\Student\StudentVacancyMatchController;
+use App\Http\Controllers\Api\LanguageController;
+use App\Http\Controllers\Api\LanguageLevelController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\VacancyController;
 use App\Http\Controllers\Api\Student\StudentFavoriteCompanyController;
@@ -45,6 +47,7 @@ Route::prefix('v1')->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         // Tags: list for selecting when creating vacancies (any authenticated user)
         Route::get('tags', [TagController::class, 'index']);
+
 
         // Company-only: own company, profile, and vacancies (full CRUD)
         Route::middleware('company')->group(function () {
@@ -96,6 +99,8 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
         Route::post('auth/refresh', [AuthController::class, 'refresh']);
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::get('tags', [TagController::class, 'index']);
+        Route::get('languages', [LanguageController::class, 'index']);
+        Route::get('language-levels', [LanguageLevelController::class, 'index']);
 
         Route::middleware('company')->group(function () {
             Route::get('company', [CompanyAccountController::class, 'showCompany']);
