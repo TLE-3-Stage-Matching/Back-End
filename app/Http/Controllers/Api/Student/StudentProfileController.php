@@ -9,6 +9,7 @@ use App\Http\Requests\Student\StoreStudentExperienceRequest;
 use App\Http\Requests\Student\UpdateStudentExperienceRequest;
 use App\Http\Requests\Student\SyncStudentLanguagesRequest;
 use App\Http\Requests\Student\SyncStudentTagsRequest;
+use App\Models\Company;
 use App\Models\StudentExperience;
 use App\Models\StudentLanguage;
 use App\Models\StudentPreference;
@@ -99,7 +100,10 @@ class StudentProfileController extends Controller
             $validated
         );
 
-        $user->load('studentPreferences.desiredRoleTag');
+        $user->load([
+            'studentPreferences.desiredRoleTag',
+            'studentFavoriteCompanies.company.industryTag',
+        ]);
 
         return response()->json([
             'message' => 'Preferences updated successfully.',
@@ -114,7 +118,10 @@ class StudentProfileController extends Controller
     public function showPreferences(): JsonResponse
     {
         $user = auth()->user();
-        $user->load('studentPreferences.desiredRoleTag');
+        $user->load([
+            'studentPreferences.desiredRoleTag',
+            'studentFavoriteCompanies.company.industryTag',
+        ]);
 
         return response()->json([
             'data' => $this->formatPreferences($user->studentPreferences),
@@ -331,6 +338,18 @@ class StudentProfileController extends Controller
             return null;
         }
 
+        $favoriteCompanies = null;
+        $user = auth()->user();
+        if ($user && $user->relationLoaded('studentFavoriteCompanies')) {
+            $favoriteCompanies = $user->studentFavoriteCompanies
+                ->map(fn ($fc) => $fc->relationLoaded('company') && $fc->company
+                    ? $this->formatCompany($fc->company)
+                    : null)
+                ->filter()
+                ->values()
+                ->all();
+        }
+
         return [
             'desired_role_tag_id' => $prefs->desired_role_tag_id,
             'hours_per_week_min' => $prefs->hours_per_week_min,
@@ -343,6 +362,30 @@ class StudentProfileController extends Controller
                 'name' => $prefs->desiredRoleTag->name,
                 'tag_type' => $prefs->desiredRoleTag->tag_type,
             ] : null,
+            'favorite_companies' => $favoriteCompanies,
+        ];
+    }
+
+    private function formatCompany(Company $company): array
+    {
+        return [
+            'id' => $company->id,
+            'name' => $company->name,
+            'industry_tag_id' => $company->industry_tag_id,
+            'industry_tag' => $company->relationLoaded('industryTag') && $company->industryTag ? [
+                'id' => $company->industryTag->id,
+                'name' => $company->industryTag->name,
+                'tag_type' => $company->industryTag->tag_type,
+            ] : null,
+            'email' => $company->email,
+            'phone' => $company->phone,
+            'size_category' => $company->size_category,
+            'photo_url' => $company->photo_url,
+            'banner_url' => $company->banner_url,
+            'description' => $company->description,
+            'is_active' => $company->is_active,
+            'created_at' => $company->created_at?->toIso8601String(),
+            'updated_at' => $company->updated_at?->toIso8601String(),
         ];
     }
 

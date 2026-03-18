@@ -5,12 +5,17 @@ namespace App\Http\Controllers\Api\Coordinator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MatchChoiceDecisionRequest;
 use App\Models\StudentMatchChoice;
+use App\Services\StudentVacancyTagMatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CoordinatorMatchChoiceController extends Controller
 {
     private const DECIDABLE_STATUSES = ['requested', 'shortlisted'];
+
+    public function __construct(
+        protected StudentVacancyTagMatchService $matchService
+    ) {}
 
     /**
      * List match choices with filters. Paginated.
@@ -147,6 +152,16 @@ class CoordinatorMatchChoiceController extends Controller
                 'last_name' => $choice->decidedByUser->last_name,
             ];
         }
+
+        $result = $this->matchService->scoreWithSubscores(
+            (int) $choice->student_user_id,
+            (int) $choice->vacancy_id
+        );
+        $data['match_result'] = [
+            'match_score' => $result['overall'],
+            'subscores' => $result['subscores'],
+        ];
+
         return $data;
     }
 }

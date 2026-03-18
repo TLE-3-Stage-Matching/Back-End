@@ -10,12 +10,17 @@ use App\Models\CompanyUser;
 use App\Models\StudentCoordinatorAssignment;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Services\StudentVacancyTagMatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class StageCoordinatorUserController extends Controller
 {
+    public function __construct(
+        protected StudentVacancyTagMatchService $matchService
+    ) {}
+
     /**
      * List users that coordinators can manage (students and company users).
      * Use role=student for students only, role=company for company users only.
@@ -66,8 +71,40 @@ class StageCoordinatorUserController extends Controller
             return $this->formatUser($user);
         });
 
+        $dataItems = $items->items();
+        if ($request->boolean('include_match_summary')) {
+            $topN = min(10, max(1, $request->integer('top_matches', 3)));
+            foreach ($users->items() as $i => $user) {
+                if ($user->role !== UserRole::Student) {
+                    continue;
+                }
+                $paginator = $this->matchService->vacanciesWithScoresForStudent(
+                    (int) $user->id,
+                    $topN,
+                    1,
+                    null
+                );
+                $topVacancyMatches = [];
+                foreach ($paginator->items() as $row) {
+                    $vacancy = $row['vacancy'];
+                    $topVacancyMatches[] = [
+                        'vacancy' => [
+                            'id' => $vacancy->id,
+                            'title' => $vacancy->title,
+                            'company' => $vacancy->relationLoaded('company') && $vacancy->company
+                                ? ['id' => $vacancy->company->id, 'name' => $vacancy->company->name]
+                                : null,
+                        ],
+                        'match_score' => $row['match_score'],
+                        'subscores' => $row['subscores'],
+                    ];
+                }
+                $dataItems[$i]['match_summary'] = ['top_vacancy_matches' => $topVacancyMatches];
+            }
+        }
+
         return response()->json([
-            'data' => $items,
+            'data' => array_values($dataItems),
             'meta' => [
                 'current_page' => $users->currentPage(),
                 'last_page' => $users->lastPage(),

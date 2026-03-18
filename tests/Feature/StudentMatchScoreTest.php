@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\ApiKey;
 use App\Models\Company;
 use App\Models\CompanyUser;
 use App\Models\StudentProfile;
@@ -17,8 +18,58 @@ class StudentMatchScoreTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function makeApiKey(): string
+    {
+        $plain = 'test-api-key-' . bin2hex(random_bytes(16));
+        ApiKey::query()->create([
+            'name' => 'Test Key',
+            'key_hash' => hash('sha256', $plain),
+            'plain_key_preview' => substr($plain, 0, 16),
+            'is_active' => true,
+        ]);
+
+        return $plain;
+    }
+
+    public function test_student_vacancy_detail_includes_match_result(): void
+    {
+        $apiKey = $this->makeApiKey();
+        $student = User::factory()->student()->create();
+        StudentProfile::create(['user_id' => $student->id]);
+        $token = JWTAuth::fromUser($student);
+
+        $company = Company::create(['name' => 'Active Co', 'is_active' => true]);
+        $vacancy = Vacancy::create(['company_id' => $company->id, 'title' => 'Dev role']);
+
+        $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ])->getJson("/api/v2/student/vacancies/{$vacancy->id}/detail");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'vacancy' => ['id', 'title', 'company'],
+                    'match_result' => [
+                        'match_score',
+                        'subscores' => [
+                            'must_have' => ['score', 'explanation'],
+                            'nice_to_have' => ['score', 'explanation'],
+                            'combined' => ['score', 'explanation'],
+                            'penalty' => ['score', 'explanation'],
+                        ],
+                    ],
+                    'score',
+                    'breakdown',
+                ],
+                'links' => ['self'],
+            ]);
+    }
+
     public function test_student_can_get_vacancies_with_scores(): void
     {
+        $apiKey = $this->makeApiKey();
         $student = User::factory()->student()->create();
         StudentProfile::create(['user_id' => $student->id]);
         $token = JWTAuth::fromUser($student);
@@ -27,9 +78,10 @@ class StudentMatchScoreTest extends TestCase
         Vacancy::create(['company_id' => $company->id, 'title' => 'Dev role']);
 
         $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
-        ])->getJson('/api/v1/student/vacancies-with-scores');
+        ])->getJson('/api/v2/student/vacancies-with-scores');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -38,8 +90,10 @@ class StudentMatchScoreTest extends TestCase
                         'vacancy' => ['id', 'title', 'company'],
                         'match_score',
                         'subscores' => [
-                            'skill' => ['score', 'explanation'],
-                            'trait' => ['score', 'explanation'],
+                            'must_have' => ['score'],
+                            'nice_to_have' => ['score'],
+                            'combined' => ['score'],
+                            'penalty' => ['score'],
                         ],
                     ],
                 ],
@@ -50,13 +104,15 @@ class StudentMatchScoreTest extends TestCase
 
     public function test_non_student_cannot_access_vacancies_with_scores(): void
     {
+        $apiKey = $this->makeApiKey();
         $coordinator = User::factory()->coordinator()->create();
         $token = JWTAuth::fromUser($coordinator);
 
         $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
-        ])->getJson('/api/v1/student/vacancies-with-scores');
+        ])->getJson('/api/v2/student/vacancies-with-scores');
 
         $response->assertStatus(403)
             ->assertJson(['message' => 'Forbidden. Student role required.']);
@@ -64,15 +120,18 @@ class StudentMatchScoreTest extends TestCase
 
     public function test_unauthenticated_user_cannot_access_vacancies_with_scores(): void
     {
+        $apiKey = $this->makeApiKey();
         $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
             'Accept' => 'application/json',
-        ])->getJson('/api/v1/student/vacancies-with-scores');
+        ])->getJson('/api/v2/student/vacancies-with-scores');
 
         $response->assertStatus(401);
     }
 
     public function test_coordinator_can_get_student_vacancies_with_scores(): void
     {
+        $apiKey = $this->makeApiKey();
         $coordinator = User::factory()->coordinator()->create();
         $student = User::factory()->student()->create();
         StudentProfile::create(['user_id' => $student->id]);
@@ -82,9 +141,10 @@ class StudentMatchScoreTest extends TestCase
         Vacancy::create(['company_id' => $company->id, 'title' => 'Dev role']);
 
         $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
-        ])->getJson("/api/v1/coordinator/students/{$student->id}/vacancies-with-scores");
+        ])->getJson("/api/v2/coordinator/students/{$student->id}/vacancies-with-scores");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -96,14 +156,16 @@ class StudentMatchScoreTest extends TestCase
 
     public function test_coordinator_gets_404_when_user_is_not_student(): void
     {
+        $apiKey = $this->makeApiKey();
         $coordinator = User::factory()->coordinator()->create();
         $companyUser = User::factory()->company()->create();
         $token = JWTAuth::fromUser($coordinator);
 
         $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
-        ])->getJson("/api/v1/coordinator/students/{$companyUser->id}/vacancies-with-scores");
+        ])->getJson("/api/v2/coordinator/students/{$companyUser->id}/vacancies-with-scores");
 
         $response->assertStatus(404)
             ->assertJson(['message' => 'User is not a student.']);
@@ -111,6 +173,7 @@ class StudentMatchScoreTest extends TestCase
 
     public function test_student_cannot_access_coordinator_student_vacancies_endpoint(): void
     {
+        $apiKey = $this->makeApiKey();
         $student = User::factory()->student()->create();
         StudentProfile::create(['user_id' => $student->id]);
         $otherStudent = User::factory()->student()->create(['email' => 'other@example.com']);
@@ -118,9 +181,10 @@ class StudentMatchScoreTest extends TestCase
         $token = JWTAuth::fromUser($student);
 
         $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
-        ])->getJson("/api/v1/coordinator/students/{$otherStudent->id}/vacancies-with-scores");
+        ])->getJson("/api/v2/coordinator/students/{$otherStudent->id}/vacancies-with-scores");
 
         $response->assertStatus(403);
     }
@@ -176,6 +240,7 @@ class StudentMatchScoreTest extends TestCase
 
     public function test_vacancies_with_scores_industry_tag_id_filters_by_company_industry(): void
     {
+        $apiKey = $this->makeApiKey();
         $industryA = Tag::create(['name' => 'Industry A', 'tag_type' => 'industry', 'is_active' => true]);
         $industryB = Tag::create(['name' => 'Industry B', 'tag_type' => 'industry', 'is_active' => true]);
 
@@ -189,14 +254,15 @@ class StudentMatchScoreTest extends TestCase
         Vacancy::create(['company_id' => $companyB->id, 'title' => 'At B']);
 
         $response = $this->withHeaders([
+            'X-API-KEY' => $apiKey,
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
-        ])->getJson('/api/v1/student/vacancies-with-scores?industry_tag_id=' . $industryA->id);
+        ])->getJson('/api/v2/student/vacancies-with-scores?industry_tag_id=' . $industryA->id);
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.vacancy.title', 'At A');
-        $response->assertJsonPath('data.0.subscores.skill', fn ($s) => array_key_exists('score', $s) && array_key_exists('explanation', $s));
-        $response->assertJsonPath('data.0.subscores.trait', fn ($s) => array_key_exists('score', $s) && array_key_exists('explanation', $s));
+        $response->assertJsonPath('data.0.subscores.must_have', fn ($s) => is_array($s) && array_key_exists('score', $s));
+        $response->assertJsonPath('data.0.subscores.nice_to_have', fn ($s) => is_array($s) && array_key_exists('score', $s));
     }
 }

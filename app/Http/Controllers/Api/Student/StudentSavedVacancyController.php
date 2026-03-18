@@ -5,30 +5,31 @@ namespace App\Http\Controllers\Api\Student;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\StoreStudentSavedVacancyRequest;
 use App\Models\StudentSavedVacancy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class StudentSavedVacancyController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $user = auth('api')->user();
 
         $savedVacancies = StudentSavedVacancy::query()
-            ->with('vacancy')
+            ->with('vacancy.company')
             ->where('student_user_id', $user->id)
             ->whereNull('removed_at')
             ->latest('created_at')
             ->get();
 
         return response()->json([
-            'data' => $savedVacancies,
+            'data' => $savedVacancies->map(fn (StudentSavedVacancy $s) => $this->formatSavedVacancy($s))->all(),
             'links' => [
-                'self' => url('/api/v1/student/saved-vacancies'),
+                'self' => url('/api/v2/student/saved-vacancies'),
             ],
         ]);
     }
 
-    public function store(StoreStudentSavedVacancyRequest $request)
+    public function store(StoreStudentSavedVacancyRequest $request): JsonResponse
     {
         $user = auth('api')->user();
         $vacancyId = $request->validated()['vacancy_id'];
@@ -44,15 +45,40 @@ class StudentSavedVacancyController extends Controller
 
         $saved->removed_at = null;
         $saved->save();
+        $saved->load('vacancy.company');
 
         return response()->json([
             'message' => 'Vacancy saved successfully.',
-            'data' => $saved,
+            'data' => $this->formatSavedVacancy($saved),
             'links' => [
-                'self' => url("/api/v1/student/saved-vacancies/{$vacancyId}"),
-                'collection' => url('/api/v1/student/saved-vacancies'),
+                'self' => url("/api/v2/student/saved-vacancies/{$vacancyId}"),
+                'collection' => url('/api/v2/student/saved-vacancies'),
             ],
         ], 201);
+    }
+
+    private function formatSavedVacancy(StudentSavedVacancy $saved): array
+    {
+        $vacancy = $saved->vacancy;
+        $data = [
+            'student_user_id' => $saved->student_user_id,
+            'vacancy_id' => $saved->vacancy_id,
+            'created_at' => $saved->created_at?->toIso8601String(),
+            'removed_at' => $saved->removed_at?->toIso8601String(),
+            'vacancy' => $vacancy ? [
+                'id' => $vacancy->id,
+                'title' => $vacancy->title,
+                'company_id' => $vacancy->company_id,
+            ] : null,
+            'company' => null,
+        ];
+        if ($vacancy && $vacancy->relationLoaded('company') && $vacancy->company) {
+            $data['company'] = [
+                'id' => $vacancy->company->id,
+                'name' => $vacancy->company->name,
+            ];
+        }
+        return $data;
     }
 
     public function destroy(int $vacancyId)

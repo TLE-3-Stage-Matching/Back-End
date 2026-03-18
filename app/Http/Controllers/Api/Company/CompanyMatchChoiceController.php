@@ -5,12 +5,17 @@ namespace App\Http\Controllers\Api\Company;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\MatchChoiceDecisionRequest;
 use App\Models\StudentMatchChoice;
+use App\Services\StudentVacancyTagMatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CompanyMatchChoiceController extends Controller
 {
     private const DECIDABLE_STATUSES = ['requested', 'shortlisted'];
+
+    public function __construct(
+        protected StudentVacancyTagMatchService $matchService
+    ) {}
 
     /**
      * List match choices for the authenticated company's vacancies.
@@ -135,6 +140,16 @@ class CompanyMatchChoiceController extends Controller
                 'company_id' => $choice->vacancy->company_id,
             ];
         }
+
+        $result = $this->matchService->scoreWithSubscores(
+            (int) $choice->student_user_id,
+            (int) $choice->vacancy_id
+        );
+        $data['match_result'] = [
+            'match_score' => $result['overall'],
+            'subscores' => $result['subscores'],
+        ];
+
         return $data;
     }
 }

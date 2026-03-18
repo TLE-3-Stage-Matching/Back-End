@@ -21,6 +21,71 @@ class StudentVacancyMatchController extends Controller
     ) {}
 
     /**
+     * GET /api/v2/student/vacancies/{vacancy}
+     *
+     * Return full vacancy details (including requirements) plus the student's match score.
+     */
+    public function show(Vacancy $vacancy): JsonResponse
+    {
+        // Keep visibility aligned with other student/public vacancy listings.
+        if (! $vacancy->company()->where('is_active', true)->exists()) {
+            return response()->json(['message' => 'Vacancy not found.'], 404);
+        }
+
+        $studentUserId = (int) auth()->user()->id;
+
+        $studentTags = $this->dataLoader->loadStudentTags($studentUserId);
+        $vacancyTags = $this->dataLoader->loadVacancyTags((int) $vacancy->id);
+
+        $result = $this->matchService->score($studentTags, $vacancyTags);
+
+        $vacancy->load([
+            'company',
+            'location',
+            'vacancyRequirements.tag',
+        ]);
+
+        return response()->json([
+            'data' => [
+                'vacancy' => $vacancy,
+                'match_result' => [
+                    'match_score' => $result->score,
+                    'subscores' => [
+                        'must_have' => [
+                            'score' => $result->dimensionDetail['s_mh'] ?? 0.0,
+                            'explanation' => 'How well you match the vacancy must-have tags (weighted by importance and your tag weights).',
+                        ],
+                        'nice_to_have' => [
+                            'score' => $result->dimensionDetail['s_nth'] ?? 0.0,
+                            'explanation' => 'How well you match the vacancy nice-to-have tags (weighted by importance and your tag weights).',
+                        ],
+                        'combined' => [
+                            'score' => $result->dimensionDetail['s_tags'] ?? 0.0,
+                            'explanation' => 'Combined tag fit before penalty (80% must-have, 20% nice-to-have).',
+                        ],
+                        'penalty' => [
+                            'score' => $result->dimensionDetail['penalty'] ?? 0.0,
+                            'explanation' => 'Penalty applied for missing must-have tags.',
+                        ],
+                    ],
+                ],
+                'score' => $result->score,
+                'score_feedback' => $this->buildScoreFeedback($result->score),
+                'breakdown' => [
+                    's_mh' => $result->dimensionDetail['s_mh'] ?? 0.0,
+                    's_nth' => $result->dimensionDetail['s_nth'] ?? 0.0,
+                    's_tags' => $result->dimensionDetail['s_tags'] ?? 0.0,
+                    'penalty' => $result->dimensionDetail['penalty'] ?? 0.0,
+                ],
+            ],
+            'links' => [
+                'self' => url("/api/v2/student/vacancies/{$vacancy->id}"),
+                'score_explanation' => url("/api/v2/student/vacancies/{$vacancy->id}/detail"),
+            ],
+        ]);
+    }
+
+    /**
      * GET /api/v1/student/vacancies/top-matches
      *
      * Score all open vacancies for the authenticated student and return top 3.
@@ -338,6 +403,28 @@ class StudentVacancyMatchController extends Controller
 
         $vacancy->load('company:id,name');
 
+        $matchResult = [
+            'match_score' => $result->score,
+            'subscores' => [
+                'must_have' => [
+                    'score' => $result->dimensionDetail['s_mh'] ?? 0.0,
+                    'explanation' => 'How well you match the vacancy must-have tags (weighted by importance and your tag weights).',
+                ],
+                'nice_to_have' => [
+                    'score' => $result->dimensionDetail['s_nth'] ?? 0.0,
+                    'explanation' => 'How well you match the vacancy nice-to-have tags (weighted by importance and your tag weights).',
+                ],
+                'combined' => [
+                    'score' => $result->dimensionDetail['s_tags'] ?? 0.0,
+                    'explanation' => 'Combined tag fit before penalty (80% must-have, 20% nice-to-have).',
+                ],
+                'penalty' => [
+                    'score' => $result->dimensionDetail['penalty'] ?? 0.0,
+                    'explanation' => 'Penalty applied for missing must-have tags.',
+                ],
+            ],
+        ];
+
         return response()->json([
             'data' => [
                 'vacancy' => [
@@ -345,6 +432,7 @@ class StudentVacancyMatchController extends Controller
                     'title' => $vacancy->title,
                     'company' => $vacancy->company?->name,
                 ],
+                'match_result' => $matchResult,
                 'score' => $result->score,
                 'score_feedback' => $this->buildScoreFeedback($result->score),
                 'breakdown' => [

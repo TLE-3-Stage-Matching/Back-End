@@ -1167,12 +1167,21 @@ Returns all match choices for vacancies belonging to the authenticated user's co
         "first_name": "Jane",
         "last_name": "Doe"
       },
-      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5 }
+      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5 },
+      "match_result": {
+        "match_score": 78,
+        "subscores": {
+          "skill": { "score": 82, "explanation": "..." },
+          "trait": { "score": 71, "explanation": "..." }
+        }
+      }
     }
   ],
   "links": { "self": "https://<host>/api/v2/company/match-choices" }
 }
 ```
+
+Each choice includes `match_result`: algorithmic fit for that student–vacancy pair (`match_score` 0–100 and `subscores` by category with explanations). Same scoring as coordinator vacancies-with-scores.
 
 </details>
 
@@ -1501,13 +1510,22 @@ Returns the authenticated student's favorite companies, most recently added firs
 {
     "data": [
         {
-            "id": 1,
-            "student_user_id": 1,
             "company_id": 5,
             "created_at": "2025-03-10T12:00:00+00:00",
             "company": {
                 "id": 5,
-                "name": "Acme Corp"
+                "name": "Acme Corp",
+                "industry_tag_id": 12,
+                "industry_tag": { "id": 12, "name": "Software", "tag_type": "industry" },
+                "email": "contact@acme.example",
+                "phone": "+31-6-12345678",
+                "size_category": "11-50",
+                "photo_url": "https://...",
+                "banner_url": "https://...",
+                "description": "We build software.",
+                "is_active": true,
+                "created_at": "2025-03-01T12:00:00+00:00",
+                "updated_at": "2025-03-10T12:00:00+00:00"
             }
         }
     ],
@@ -1554,10 +1572,23 @@ idempotent).
 {
     "message": "Company added to favorites.",
     "data": {
-        "id": 1,
-        "student_user_id": 1,
         "company_id": 5,
-        "created_at": "2025-03-10T12:00:00+00:00"
+        "created_at": "2025-03-10T12:00:00+00:00",
+        "company": {
+            "id": 5,
+            "name": "Acme Corp",
+            "industry_tag_id": 12,
+            "industry_tag": { "id": 12, "name": "Software", "tag_type": "industry" },
+            "email": "contact@acme.example",
+            "phone": "+31-6-12345678",
+            "size_category": "11-50",
+            "photo_url": "https://...",
+            "banner_url": "https://...",
+            "description": "We build software.",
+            "is_active": true,
+            "created_at": "2025-03-01T12:00:00+00:00",
+            "updated_at": "2025-03-10T12:00:00+00:00"
+        }
     },
     "links": {
         "self": "https://<host>/api/v2/student/favorite-companies/5",
@@ -1605,6 +1636,7 @@ considered.
 |--------|---------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
 | GET    | `/student/vacancies/top-matches`      | Top 3 best-matching vacancies for the student.                                                                                      |
 | GET    | `/student/vacancies/with-scores`      | All eligible vacancies with score details, sorted by score.                                                                         |
+| GET    | `/student/vacancies/{vacancy}`        | Full vacancy detail (vacancy + requirements) plus match score and subscores.                                                        |
 | GET    | `/student/vacancies/{vacancy}/detail` | Single vacancy score explanation (breakdown, must_have_misses, human_explanation).                                                  |
 | GET    | `/student/vacancies-with-scores`      | List vacancies with match score and subscores (must_have, nice_to_have, combined, penalty); pagination, optional `industry_tag_id`. |
 
@@ -1688,6 +1720,71 @@ pagination; use `GET /student/vacancies-with-scores` for paginated results.
 
 ---
 
+#### Single vacancy (full detail + score)
+
+|            |                                           |
+|------------|-------------------------------------------|
+| **Method** | `GET`                                     |
+| **Path**   | `/student/vacancies/{vacancy}`            |
+| **Auth**   | `X-API-KEY` + Bearer token + student role |
+
+Returns the full vacancy object (including `company`, `location`, and `vacancy_requirements` with nested `tag`) and
+the student's **match score** + **subscores** for that vacancy. The vacancy must belong to an **active** company;
+otherwise **404** is returned.
+
+**URL parameters:** `vacancy` – vacancy ID.
+
+<details>
+<summary><strong>Success (200) – Response body (JSON)</strong></summary>
+
+```json
+{
+    "data": {
+        "vacancy": {
+            "id": 10,
+            "company_id": 1,
+            "location_id": 2,
+            "title": "Backend developer",
+            "hours_per_week": 40,
+            "description": "...",
+            "offer_text": "...",
+            "expectations_text": "...",
+            "status": "open",
+            "company": { "id": 1, "name": "Acme Corp" },
+            "location": { "id": 2, "city": "..." },
+            "vacancy_requirements": [
+                {
+                    "tag_id": 3,
+                    "requirement_type": "must_have",
+                    "importance": 5,
+                    "tag": { "id": 3, "name": "PHP", "tag_type": "skill" }
+                }
+            ]
+        },
+        "match_result": {
+            "match_score": 85,
+            "subscores": {
+                "must_have": { "score": 0.9, "explanation": "..." },
+                "nice_to_have": { "score": 0.7, "explanation": "..." },
+                "combined": { "score": 0.86, "explanation": "..." },
+                "penalty": { "score": 0.05, "explanation": "..." }
+            }
+        },
+        "score": 85,
+        "score_feedback": { "label": "great_match", "message": "Great match: your profile strongly aligns with this vacancy." },
+        "breakdown": { "s_mh": 0.9, "s_nth": 0.7, "s_tags": 0.86, "penalty": 0.05 }
+    },
+    "links": {
+        "self": "http://127.0.0.1:8000/api/v2/student/vacancies/10",
+        "score_explanation": "http://127.0.0.1:8000/api/v2/student/vacancies/10/detail"
+    }
+}
+```
+
+</details>
+
+---
+
 #### Single vacancy detail (score explanation)
 
 |            |                                           |
@@ -1712,6 +1809,15 @@ company; otherwise **404** is returned.
             "id": 10,
             "title": "Backend developer",
             "company": "Acme Corp"
+        },
+        "match_result": {
+            "match_score": 85,
+            "subscores": {
+                "must_have": { "score": 0.9, "explanation": "How well you match the vacancy must-have tags (weighted by importance and your tag weights)." },
+                "nice_to_have": { "score": 0.7, "explanation": "How well you match the vacancy nice-to-have tags (weighted by importance and your tag weights)." },
+                "combined": { "score": 0.86, "explanation": "Combined tag fit before penalty (80% must-have, 20% nice-to-have)." },
+                "penalty": { "score": 0.05, "explanation": "Penalty applied for missing must-have tags." }
+            }
         },
         "score": 85,
         "breakdown": {
@@ -1917,7 +2023,7 @@ Students can save vacancies to a list and remove them. Saved vacancies with `rem
 | **Path**   | `/student/saved-vacancies`                |
 | **Auth**   | `X-API-KEY` + Bearer token + student role |
 
-Returns the authenticated student's saved vacancies (only those not removed), most recently saved first.
+Returns the authenticated student's saved vacancies (only those not removed), most recently saved first. Each item includes the vacancy and the **company** that posted it.
 
 <details>
 <summary><strong>Success (200) – Response body (JSON)</strong></summary>
@@ -1926,7 +2032,6 @@ Returns the authenticated student's saved vacancies (only those not removed), mo
 {
     "data": [
         {
-            "id": 1,
             "student_user_id": 1,
             "vacancy_id": 10,
             "created_at": "2025-03-10T12:00:00+00:00",
@@ -1935,6 +2040,10 @@ Returns the authenticated student's saved vacancies (only those not removed), mo
                 "id": 10,
                 "title": "Backend developer",
                 "company_id": 5
+            },
+            "company": {
+                "id": 5,
+                "name": "Acme Corp"
             }
         }
     ],
@@ -1943,6 +2052,15 @@ Returns the authenticated student's saved vacancies (only those not removed), mo
     }
 }
 ```
+
+| Field           | Type   | Description                                      |
+|-----------------|--------|--------------------------------------------------|
+| student_user_id | number | Authenticated student user ID.                   |
+| vacancy_id      | number | Vacancy ID.                                      |
+| created_at      | string | ISO 8601 datetime when the vacancy was saved.    |
+| removed_at      | string \| null | ISO 8601 datetime if removed; otherwise `null`. |
+| vacancy         | object | `id`, `title`, `company_id`.                     |
+| company         | object | Company that posted the vacancy: `id`, `name`.   |
 
 </details>
 
@@ -1981,11 +2099,19 @@ null). If never saved, a new record is created.
 {
     "message": "Vacancy saved successfully.",
     "data": {
-        "id": 1,
         "student_user_id": 1,
         "vacancy_id": 10,
         "created_at": "2025-03-10T12:00:00+00:00",
-        "removed_at": null
+        "removed_at": null,
+        "vacancy": {
+            "id": 10,
+            "title": "Backend developer",
+            "company_id": 5
+        },
+        "company": {
+            "id": 5,
+            "name": "Acme Corp"
+        }
     },
     "links": {
         "self": "https://<host>/api/v2/student/saved-vacancies/10",
@@ -1993,6 +2119,8 @@ null). If never saved, a new record is created.
     }
 }
 ```
+
+The `data` object uses the same shape as each item in the list (see [List saved vacancies](#list-saved-vacancies)), including `vacancy` and `company`.
 
 </details>
 
@@ -2212,7 +2340,24 @@ Update the student note and/or set status to `withdrawn`. Only allowed when the 
             "id": 2,
             "name": "Backend Developer",
             "tag_type": "role"
-        }
+        },
+        "favorite_companies": [
+            {
+                "id": 5,
+                "name": "Acme Corp",
+                "industry_tag_id": 12,
+                "industry_tag": { "id": 12, "name": "Software", "tag_type": "industry" },
+                "email": "contact@acme.example",
+                "phone": "+31-6-12345678",
+                "size_category": "11-50",
+                "photo_url": "https://...",
+                "banner_url": "https://...",
+                "description": "We build software.",
+                "is_active": true,
+                "created_at": "2025-03-01T12:00:00+00:00",
+                "updated_at": "2025-03-10T12:00:00+00:00"
+            }
+        ]
     },
     "links": {
         "self": "..."
@@ -2779,6 +2924,8 @@ frontends.
 Returns only vacancies belonging to active companies (`is_active: true`). Vacancies are loaded with `company:id,name`and
 `vacancyRequirements.tag`.
 
+**Note for student UIs:** For authenticated **students**, it is often better to use the [student vacancy matching](#student-vacancy-matching-v2) endpoints instead of this plain list. Those endpoints return vacancies with **match scores** and subscores (e.g. `GET /student/vacancies-with-scores`, `GET /student/vacancies/top-matches`, `GET /student/vacancies/with-scores`, `GET /student/vacancies/{vacancy}/detail`), so students can see how well each vacancy fits their profile.
+
 <details>
 <summary><strong>Success (200) – Response body (JSON)</strong></summary>
 
@@ -3003,11 +3150,16 @@ Manage **student** and **company** users. For company users, the company must ex
 | per_page              | number  | 15      | Pagination size                                                                                                                                                 |
 | active_companies_only | boolean | false   | If `1` or `true`, only return students and company users whose company is active (useful when listing users for display). Omit to see all users for management. |
 | assigned_to_me        | boolean | false   | If `1` or `true` **and** `role=student`, only return students currently assigned to the logged-in coordinator.                                                  |
+| include_match_summary | boolean | false   | If `1` or `true`, each **student** in the list gets a `match_summary` with `top_vacancy_matches`: top vacancies with `match_score` and `subscores` (same algorithm as coordinator vacancies-with-scores). Ignored when role is company. |
+| top_matches           | number  | 3       | When `include_match_summary` is set, number of top vacancies to include per student (capped at 10).                                                             |
 
 **Example:** `GET /coordinator/users?role=student&search=jan&per_page=10`
 **Example:** `GET /coordinator/users?role=student&per_page=10`  
 **Example (only active companies’ users):** `GET /coordinator/users?active_companies_only=1`
 **Example (students with a match choice):** `GET /coordinator/users?role=student&has_match_choice=1`
+**Example (students with top match scores):** `GET /coordinator/users?role=student&include_match_summary=1&top_matches=5`
+
+When `include_match_summary=1` and the listed users include students, each student object has a `match_summary` key: `{ "top_vacancy_matches": [ { "vacancy": { "id", "title", "company": { "id", "name" } }, "match_score": <0-100>, "subscores": { "skill": { "score", "explanation" }, "trait": { "score", "explanation" } } }, ... ] }`.
 
 <details>
 <summary><strong>Success (200) – Response body (JSON)</strong></summary>
@@ -3770,13 +3922,22 @@ Returns match choices, paginated. Optional query parameters: `student_user_id`, 
       "created_at": "2025-03-10T12:00:00+00:00",
       "updated_at": "2025-03-10T12:00:00+00:00",
       "student": { "id": 2, "email": "student@example.com", "first_name": "Jane", "last_name": "Doe" },
-      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5, "company": { "id": 5, "name": "Acme Corp" } }
+      "vacancy": { "id": 10, "title": "Backend developer", "company_id": 5, "company": { "id": 5, "name": "Acme Corp" } },
+      "match_result": {
+        "match_score": 78,
+        "subscores": {
+          "skill": { "score": 82, "explanation": "..." },
+          "trait": { "score": 71, "explanation": "..." }
+        }
+      }
     }
   ],
   "meta": { "current_page": 1, "last_page": 1, "per_page": 15, "total": 1 },
   "links": { "self": "https://<host>/api/v2/coordinator/match-choices" }
 }
 ```
+
+Each choice includes `match_result`: algorithmic fit for that student–vacancy pair (`match_score` 0–100 and `subscores` by category with explanations). Same scoring as coordinator student vacancies-with-scores.
 
 </details>
 

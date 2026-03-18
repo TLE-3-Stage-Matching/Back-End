@@ -147,6 +147,7 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::put('student/tags', [StudentProfileController::class, 'syncTags']);
             Route::get('student/vacancies/top-matches', [StudentVacancyMatchController::class, 'topMatches']);
             Route::get('student/vacancies/with-scores', [StudentVacancyMatchController::class, 'withScores']);
+            Route::get('student/vacancies/{vacancy}', [StudentVacancyMatchController::class, 'show']);
             Route::get('student/vacancies/{vacancy}/detail', [StudentVacancyMatchController::class, 'detail']);
             Route::get('student/vacancies-with-scores', [StudentMatchScoreController::class, 'vacanciesWithScores']);
             Route::get('student/match-choices', [StudentMatchChoiceController::class, 'index']);

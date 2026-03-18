@@ -1489,6 +1489,8 @@ not appear here until a stage coordinator sets their `is_active` to `true`.
 
 **Query parameters:** `per_page` (number, default 15) for pagination.
 
+**Note for student UIs:** For student-facing apps, it is often better to use the **match-score** endpoints (vacancies with scores, top matches, etc.) instead of this plain list; see [API-v2.md – Student vacancy matching](API-v2.md#student-vacancy-matching-v2).
+
 **Success (200):**
 
 ```json

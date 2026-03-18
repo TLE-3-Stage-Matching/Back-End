@@ -219,6 +219,10 @@ class StudentProfileTest extends TestCase
 
     public function test_student_can_get_preferences(): void
     {
+        StudentPreference::create([
+            'student_user_id' => $this->student->id,
+        ]);
+
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
             'Accept' => 'application/json',
@@ -226,7 +230,16 @@ class StudentProfileTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'data',
+                'data' => [
+                    'desired_role_tag_id',
+                    'hours_per_week_min',
+                    'hours_per_week_max',
+                    'max_distance_km',
+                    'has_drivers_license',
+                    'notes',
+                    'desired_role_tag',
+                    'favorite_companies',
+                ],
                 'links' => ['self'],
             ]);
     }
@@ -251,7 +264,8 @@ class StudentProfileTest extends TestCase
             ->assertJsonPath('data.desired_role_tag_id', $tag->id)
             ->assertJsonPath('data.hours_per_week_min', 32)
             ->assertJsonPath('data.hours_per_week_max', 40)
-            ->assertJsonPath('data.has_drivers_license', true);
+            ->assertJsonPath('data.has_drivers_license', true)
+            ->assertJsonStructure(['data' => ['favorite_companies']]);
 
         $this->assertDatabaseHas('student_preferences', [
             'student_user_id' => $this->student->id,
@@ -519,7 +533,7 @@ class StudentProfileTest extends TestCase
             'student_user_id' => $this->student->id,
             'tag_id' => $tag->id,
             'is_active' => true,
-            'weight' => 90,
+            'weight' => 5,
         ]);
 
         $response = $this->withHeaders([
@@ -530,7 +544,7 @@ class StudentProfileTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.tag.name', 'PHP')
-            ->assertJsonPath('data.0.weight', 90);
+            ->assertJsonPath('data.0.weight', 5);
     }
 
     public function test_student_can_sync_tags(): void
@@ -544,9 +558,9 @@ class StudentProfileTest extends TestCase
             'Accept' => 'application/json',
         ])->putJson('/api/v1/student/tags', [
             'tags' => [
-                ['tag_id' => $php->id, 'is_active' => true, 'weight' => 90],
-                ['tag_id' => $laravel->id, 'is_active' => true, 'weight' => 85],
-                ['tag_id' => $vue->id, 'is_active' => true, 'weight' => 70],
+                ['tag_id' => $php->id, 'is_active' => true, 'weight' => 5],
+                ['tag_id' => $laravel->id, 'is_active' => true, 'weight' => 4],
+                ['tag_id' => $vue->id, 'is_active' => true, 'weight' => 3],
             ],
         ]);
 
@@ -557,7 +571,7 @@ class StudentProfileTest extends TestCase
         $this->assertDatabaseHas('student_tags', [
             'student_user_id' => $this->student->id,
             'tag_id' => $php->id,
-            'weight' => 90,
+            'weight' => 5,
         ]);
     }
 
@@ -579,7 +593,7 @@ class StudentProfileTest extends TestCase
             'Accept' => 'application/json',
         ])->putJson('/api/v1/student/tags', [
             'tags' => [
-                ['tag_id' => $python->id, 'is_active' => true, 'weight' => 80],
+                ['tag_id' => $python->id, 'is_active' => true, 'weight' => 4],
             ],
         ]);
 
@@ -651,7 +665,7 @@ class StudentProfileTest extends TestCase
             'Accept' => 'application/json',
         ])->putJson('/api/v1/student/tags', [
             'tags' => [
-                ['tag_id' => $tag->id, 'weight' => 90],
+                ['tag_id' => $tag->id, 'weight' => 5],
             ],
         ])->assertStatus(200);
 
