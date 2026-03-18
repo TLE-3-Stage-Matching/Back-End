@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Student\SandboxTagsRequest;
 use App\Matching\DTOs\StudentTagDTO;
 use App\Matching\DTOs\VacancyTagDTO;
 use App\Matching\StudentMatchDataLoader;
@@ -13,7 +14,7 @@ use App\Models\Tag;
 use App\Models\Vacancy;
 use Illuminate\Http\JsonResponse;
 
-class StudentVacancyMatchController extends Controller
+class StudentSandboxMatchController extends Controller
 {
     public function __construct(
         private readonly VacancyMatchingService $matchService,
@@ -21,11 +22,11 @@ class StudentVacancyMatchController extends Controller
     ) {}
 
     /**
-     * GET /api/v2/student/vacancies/{vacancy}
+     * POST /api/v2/student/sandbox/vacancies/{vacancy}
      *
-     * Return full vacancy details (including requirements) plus the student's match score.
+     * Same as the student vacancy show endpoint, but using sandbox skill/trait tags.
      */
-    public function show(Vacancy $vacancy): JsonResponse
+    public function show(SandboxTagsRequest $request, Vacancy $vacancy): JsonResponse
     {
         // Keep visibility aligned with other student/public vacancy listings.
         if (! $vacancy->company()->where('is_active', true)->exists()) {
@@ -34,7 +35,8 @@ class StudentVacancyMatchController extends Controller
 
         $studentUserId = (int) auth()->user()->id;
 
-        $studentTags = $this->dataLoader->loadStudentTags($studentUserId);
+        $sandboxTags = $this->buildSandboxDtos($request->validated('tags', []));
+        $studentTags = $this->dataLoader->loadEffectiveStudentTagsForSandbox($studentUserId, $sandboxTags);
         $vacancyTags = $this->dataLoader->loadVacancyTags((int) $vacancy->id);
 
         $result = $this->matchService->score($studentTags, $vacancyTags);
@@ -46,6 +48,7 @@ class StudentVacancyMatchController extends Controller
         ]);
 
         return response()->json([
+            'sandbox' => true,
             'data' => [
                 'vacancy' => $vacancy,
                 'match_result' => [
@@ -79,29 +82,30 @@ class StudentVacancyMatchController extends Controller
                 ],
             ],
             'links' => [
-                'self' => url("/api/v2/student/vacancies/{$vacancy->id}"),
-                'score_explanation' => url("/api/v2/student/vacancies/{$vacancy->id}/detail"),
+                'self' => url("/api/v2/student/sandbox/vacancies/{$vacancy->id}"),
+                'score_explanation' => url("/api/v2/student/sandbox/vacancies/{$vacancy->id}/detail"),
             ],
         ]);
     }
 
     /**
-     * GET /api/v1/student/vacancies/top-matches
+     * POST /api/v2/student/sandbox/top-matches
      *
-     * Score all open vacancies for the authenticated student and return top 3.
+     * Score all open vacancies for the authenticated student and return top 3,
+     * using sandbox skill/trait tags.
      */
-    public function topMatches(): JsonResponse
+    public function topMatches(SandboxTagsRequest $request): JsonResponse
     {
         $studentUserId = (int) auth()->user()->id;
 
-        // Load student tags
-        $studentTags = $this->dataLoader->loadStudentTags($studentUserId);
+        $sandboxTags = $this->buildSandboxDtos($request->validated('tags', []));
+        $studentTags = $this->dataLoader->loadEffectiveStudentTagsForSandbox($studentUserId, $sandboxTags);
 
-        // Load all open vacancies with their tags
         $vacanciesWithTags = $this->dataLoader->loadOpenVacanciesWithTags();
 
         if (empty($vacanciesWithTags)) {
             return response()->json([
+                'sandbox' => true,
                 'data' => [],
                 'algorithm_transparency' => [
                     'in_simple_terms' => [
@@ -113,13 +117,9 @@ class StudentVacancyMatchController extends Controller
             ]);
         }
 
-        // Score all vacancies
         $scores = $this->matchService->rankForStudent($studentTags, $vacanciesWithTags);
-
-        // Get top 3
         $topThree = array_slice($scores, 0, 3);
 
-        // Collect relevant tag IDs so we can return readable tag names.
         $relevantTagIds = [];
         foreach ($topThree as $result) {
             foreach ($result->mustHaveMisses as $tagId) {
@@ -138,11 +138,9 @@ class StudentVacancyMatchController extends Controller
                 ->all();
         }
 
-        // Load vacancy details
         $vacancyIds = array_map(fn ($result) => $result->vacancyId, $topThree);
         $vacancyDetails = $this->dataLoader->loadVacancyDetails($vacancyIds);
 
-        // Format response
         $data = [];
         $studentWeightsByTagId = $this->buildStudentWeightMap($studentTags);
         foreach ($topThree as $result) {
@@ -175,6 +173,7 @@ class StudentVacancyMatchController extends Controller
         }
 
         return response()->json([
+            'sandbox' => true,
             'data' => $data,
             'algorithm_transparency' => [
                 'in_simple_terms' => [
@@ -195,22 +194,23 @@ class StudentVacancyMatchController extends Controller
     }
 
     /**
-     * GET /api/v1/student/vacancies/with-scores
+     * POST /api/v2/student/sandbox/vacancies/with-scores
      *
-     * Score all open vacancies for the authenticated student and return all sorted by score descending.
+     * Score all open vacancies for the authenticated student and return all sorted by score,
+     * using sandbox skill/trait tags.
      */
-    public function withScores(): JsonResponse
+    public function withScores(SandboxTagsRequest $request): JsonResponse
     {
         $studentUserId = (int) auth()->user()->id;
 
-        // Load student tags
-        $studentTags = $this->dataLoader->loadStudentTags($studentUserId);
+        $sandboxTags = $this->buildSandboxDtos($request->validated('tags', []));
+        $studentTags = $this->dataLoader->loadEffectiveStudentTagsForSandbox($studentUserId, $sandboxTags);
 
-        // Load all open vacancies with their tags
         $vacanciesWithTags = $this->dataLoader->loadOpenVacanciesWithTags();
 
         if (empty($vacanciesWithTags)) {
             return response()->json([
+                'sandbox' => true,
                 'data' => [],
                 'algorithm_transparency' => [
                     'in_simple_terms' => [
@@ -222,14 +222,11 @@ class StudentVacancyMatchController extends Controller
             ]);
         }
 
-        // Score all vacancies
         $scores = $this->matchService->rankForStudent($studentTags, $vacanciesWithTags);
 
-        // Load vacancy details
         $vacancyIds = array_map(fn ($result) => $result->vacancyId, $scores);
         $vacancyDetails = $this->dataLoader->loadVacancyDetails($vacancyIds);
 
-        // Format response
         $data = [];
         foreach ($scores as $result) {
             $details = $vacancyDetails[$result->vacancyId] ?? null;
@@ -273,6 +270,7 @@ class StudentVacancyMatchController extends Controller
         }
 
         return response()->json([
+            'sandbox' => true,
             'data' => $data,
             'algorithm_transparency' => [
                 'in_simple_terms' => [
@@ -286,11 +284,11 @@ class StudentVacancyMatchController extends Controller
     }
 
     /**
-     * GET /api/v1/student/vacancies/{vacancy}/detail
+     * POST /api/v2/student/sandbox/vacancies/{vacancy}/detail
      *
-     * Explain why the score was given for a single vacancy.
+     * Explain why the score was given for a single vacancy using sandbox tags.
      */
-    public function detail(Vacancy $vacancy): JsonResponse
+    public function detail(SandboxTagsRequest $request, Vacancy $vacancy): JsonResponse
     {
         // Keep visibility aligned with other student/public vacancy listings.
         if (! $vacancy->company()->where('is_active', true)->exists()) {
@@ -299,7 +297,8 @@ class StudentVacancyMatchController extends Controller
 
         $studentUserId = (int) auth()->user()->id;
 
-        $studentTags = $this->dataLoader->loadStudentTags($studentUserId);
+        $sandboxTags = $this->buildSandboxDtos($request->validated('tags', []));
+        $studentTags = $this->dataLoader->loadEffectiveStudentTagsForSandbox($studentUserId, $sandboxTags);
         $vacancyTags = $this->dataLoader->loadVacancyTags((int) $vacancy->id);
 
         $result = $this->matchService->score($studentTags, $vacancyTags);
@@ -353,7 +352,6 @@ class StudentVacancyMatchController extends Controller
             ];
         }, $result->mustHaveMisses));
 
-        // Build a readable explanation for students.
         $matchedMustHave = array_values(array_filter($mustHaveDetails, fn ($t) => $t['student_has_tag']));
         $matchedNiceToHave = array_values(array_filter($niceToHaveDetails, fn ($t) => $t['student_has_tag']));
         $missingNiceToHave = array_values(array_filter($niceToHaveDetails, fn ($t) => ! $t['student_has_tag']));
@@ -382,61 +380,18 @@ class StudentVacancyMatchController extends Controller
 
         $strengths = array_values(array_map(
             fn ($t) => $t['tag_name'],
-            array_slice(array_merge($matchedMustHave, $matchedNiceToHave), 0, 5)
+            array_slice($matchedMustHave, 0, 3)
         ));
 
-        $improveNow = array_values(array_map(
+        $opportunities = array_values(array_map(
             fn ($t) => $t['tag_name'],
-            array_slice(array_merge($highImpactMissingMustHave, $missingNiceToHave), 0, 5)
+            array_slice($highImpactMissingMustHave, 0, 3)
         ));
-
-        $recommendations = $this->buildScoreImprovementRecommendations(
-            studentTags: $studentTags,
-            vacancyTags: $vacancyTags,
-            studentWeightsByTagId: $studentByTagId,
-            tagNames: $tagNames,
-        );
-        $addTagRecommendations = array_values(array_filter(
-            $recommendations,
-            fn (array $row) => ($row['action'] ?? null) === 'acquire_tag'
-        ));
-        $increaseWeightRecommendations = array_values(array_filter(
-            $recommendations,
-            fn (array $row) => ($row['action'] ?? null) === 'increase_weight'
-        ));
-
-        $vacancy->load('company:id,name');
-
-        $matchResult = [
-            'match_score' => $result->score,
-            'subscores' => [
-                'must_have' => [
-                    'score' => $result->dimensionDetail['s_mh'] ?? 0.0,
-                    'explanation' => 'How well you match the vacancy must-have tags (weighted by importance and your tag weights).',
-                ],
-                'nice_to_have' => [
-                    'score' => $result->dimensionDetail['s_nth'] ?? 0.0,
-                    'explanation' => 'How well you match the vacancy nice-to-have tags (weighted by importance and your tag weights).',
-                ],
-                'combined' => [
-                    'score' => $result->dimensionDetail['s_tags'] ?? 0.0,
-                    'explanation' => 'Combined tag fit before penalty (80% must-have, 20% nice-to-have).',
-                ],
-                'penalty' => [
-                    'score' => $result->dimensionDetail['penalty'] ?? 0.0,
-                    'explanation' => 'Penalty applied for missing must-have tags.',
-                ],
-            ],
-        ];
 
         return response()->json([
+            'sandbox' => true,
             'data' => [
-                'vacancy' => [
-                    'id' => $vacancy->id,
-                    'title' => $vacancy->title,
-                    'company' => $vacancy->company?->name,
-                ],
-                'match_result' => $matchResult,
+                'vacancy_id' => (int) $vacancy->id,
                 'score' => $result->score,
                 'score_feedback' => $this->buildScoreFeedback($result->score),
                 'breakdown' => [
@@ -445,38 +400,32 @@ class StudentVacancyMatchController extends Controller
                     's_tags' => $result->dimensionDetail['s_tags'] ?? 0.0,
                     'penalty' => $result->dimensionDetail['penalty'] ?? 0.0,
                 ],
-                'must_have_context' => $this->buildMustHaveContext(count($mustHaveDetails), count($missDetails)),
-                'must_have_misses' => $missDetails,
-                'nice_to_have_misses' => array_values(array_map(fn ($t) => [
-                    'tag_id' => $t['tag_id'],
-                    'tag_name' => $t['tag_name'],
-                    'importance' => $t['importance'],
-                ], $missingNiceToHave)),
-                'tags' => [
-                    'all' => $tagDetails,
-                    'must_haves' => $mustHaveDetails,
-                    'nice_to_haves' => $niceToHaveDetails,
-                ],
                 'human_explanation' => [
                     'summary' => $summary,
-                    'what_you_match_well' => $strengths,
-                    'what_to_improve_next' => $improveNow,
-                    'tips' => [
-                        'Focus first on missing must-have tags, especially high-importance ones (4-5).',
-                        'Add missing skills to your profile only if you can realistically perform them.',
-                        'Improve existing tag weights by gaining project or internship experience in those skills.',
+                    'strengths' => $strengths,
+                    'opportunities' => $opportunities,
+                    'must_have_context' => $this->buildMustHaveContext(count($mustHaveDetails), count($missDetails)),
+                    'how_score_is_calculated' => [
+                        'Must-have tags have 80% impact.',
+                        'Nice-to-have tags have 20% impact.',
+                        'Missing must-have tags reduce your score with a penalty.',
                     ],
                 ],
-                'improvement_plan' => [
-                    'recommended_add_tags' => $addTagRecommendations,
-                    'recommended_increase_existing_tags' => $increaseWeightRecommendations,
+                'tag_details' => [
+                    'all' => $tagDetails,
+                    'must_have' => $mustHaveDetails,
+                    'nice_to_have' => $niceToHaveDetails,
+                    'missing_must_haves' => $missDetails,
                 ],
-                'explanation' => [
+                'algorithm_transparency' => [
+                    'in_simple_terms' => [
+                        'We compare your tags with the vacancy tags.',
+                        'Must-have tags count the most.',
+                        'Missing must-have tags reduce your score with a penalty.',
+                    ],
                     'formula' => [
-                        'match_multiplier' => 'm_k = 1 + (w_k - 3) / 20 when student has the tag, else 0',
-                        'importance_normalized' => 'i_hat = importance / 5',
-                        'must_have_score' => 'S_MH = weighted average of must-have tag matches (or 1.0 when none)',
-                        'nice_to_have_score' => 'S_NTH = weighted average of nice-to-have tag matches (or 1.0 when none)',
+                        'must_have_weight' => '80%',
+                        'nice_to_have_weight' => '20%',
                         'combined' => 'S_tags = 0.8 * S_MH + 0.2 * S_NTH',
                         'penalty' => 'P = (missing_must_haves / total_must_haves) * 0.25',
                         'final' => 'score = clamp((S_tags - P) * 100, 0, 100)',
@@ -484,9 +433,26 @@ class StudentVacancyMatchController extends Controller
                 ],
             ],
             'links' => [
-                'self' => url("/api/v1/student/vacancies/{$vacancy->id}/detail"),
+                'self' => url("/api/v2/student/sandbox/vacancies/{$vacancy->id}/detail"),
             ],
         ]);
+    }
+
+    /**
+     * @param  array<int, array{tag_id: int, weight: int}>  $tags
+     * @return StudentTagDTO[]
+     */
+    private function buildSandboxDtos(array $tags): array
+    {
+        $dtos = [];
+        foreach ($tags as $t) {
+            $dtos[] = new StudentTagDTO(
+                tagId: (int) $t['tag_id'],
+                weight: (int) $t['weight'],
+            );
+        }
+
+        return $dtos;
     }
 
     /**
@@ -724,3 +690,4 @@ class StudentVacancyMatchController extends Controller
         return $updated;
     }
 }
+

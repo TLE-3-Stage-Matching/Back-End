@@ -1,59 +1,82 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Back-End TLE3
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel backend for **student–vacancy matching**: students, companies, and coordinators manage profiles, vacancies, and match scores via the v2 API.
 
-## About Laravel
+## Table of contents
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- [About](#about)
+- [Tech stack](#tech-stack)
+- [Data model](#data-model)
+- [Installation & deployment](docs/INSTALLATION.md)
+- [Matching system](#matching-system)
+- [Edge cases](docs/EDGE-CASES.md)
+- [API & documentation](docs/API-v2.md)
+- [Testing](docs/TESTS.md)
+- [Expanding the project](docs/EXPANDING.md)
+- [License](#license)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## About
 
-## Learning Laravel
+This project is a Laravel API that supports **student–vacancy matching**: students maintain profiles and get match scores for vacancies; companies publish vacancies and manage match choices; coordinators manage companies, users, and student–coordinator assignments. Roles: **student**, **company**, **coordinator**.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Tech stack
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP 8.2+, Laravel 12, JWT ([tymon/jwt-auth](https://github.com/tymon/jwt-auth)), MySQL (or configured DB). Optional: Node/npm (Vite), queue worker.
 
-## Laravel Sponsors
+## Data model
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+The database is described in DBML; entity groups and relationships are documented in [docs/DATA-MODEL.md](docs/DATA-MODEL.md). You can view an ERD by importing [docs/schema.dbml](docs/schema.dbml) into [dbdiagram.io](https://dbdiagram.io).
+Alternatively you can view it at [complete ERD in dbdiagram.io](https://dbdiagram.io/d/De-Ballenbak-van-TLE3-Team4-69a58819a3f0aa31e186ba80).
 
-### Premium Partners
+## Installation & deployment
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+1. Clone the repo and run `composer install`.
+2. Copy `.env.example` to `.env`, run `php artisan key:generate` and `php artisan jwt:secret`, configure DB and `APP_URL`, then `php artisan migrate` (optionally `php artisan db:seed`).
+3. Run the app with `composer run dev` or `php artisan serve`.
 
-## Contributing
+**Full guide:** [docs/INSTALLATION.md](docs/INSTALLATION.md) (local setup, deployment, env, JWT, API keys, matching system).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Matching system
 
-## Code of Conduct
+Student–vacancy matching is **rule-based** and computed **on demand**: [VacancyMatchingService](app/Matching/VacancyMatchingService.php) scores students against vacancies using tags (must-have / nice-to-have, importance and weight 1–5). There is **no external AI service**; the database supports AI run metadata (e.g. criteria versions) for future batch or versioned runs. See [docs/INSTALLATION.md](docs/INSTALLATION.md) for deployment notes.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Edge cases
 
-## Security Vulnerabilities
+Matching and validation edge cases (e.g. vacancy with no must-haves, score clamping, tag limits, auth errors) are listed with short explanations in [docs/EDGE-CASES.md](docs/EDGE-CASES.md). See also [docs/TESTS.md](docs/TESTS.md) and [docs/API-v2.md](docs/API-v2.md).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## API & documentation
+
+- **Base URL:** `https://<your-api-host>/api/v2`
+- **Auth:** API key in `X-API-KEY` header for all requests; JWT in `Authorization: Bearer <token>` for protected routes.
+- **Roles:** Coordinator (register, companies, users, vacancies, match scores, assignments); Company (own company, profile, vacancies, comments); Student (profile, experiences, preferences, tags, languages, favorites, saved vacancies, vacancy matching).
+
+If you open your `APP_URL` in a browser, you’ll find **extensive API documentation** and guidance for **API key generation** for local/dev usage.
+
+**Full v2 API reference:** [docs/API-v2.md](docs/API-v2.md).
+
+## Testing
+
+- `composer test` or `php artisan test` — run the full suite.
+- `php artisan test --testsuite=Unit` / `--testsuite=Feature` — run by suite.
+- `php artisan test --filter=test_name` — run tests matching a name.
+- `php artisan test --coverage` — coverage report (requires Xdebug or PCOV).
+
+**Full test catalog and coverage map:** [docs/TESTS.md](docs/TESTS.md).
+
+## Expanding the project
+
+Schema areas that are unused or partly used and good candidates for expansion:
+
+- **AI versioning and batch runs** — `ai_prompts`, `ai_runs`, `ai_criteria_versions`, `match_vacancy_scores` / `match_vacancy_factors`
+- **Messaging** — `conversations`, `messages` (vacancy_chat, student_admin, admin_company)
+- **Bias alerts and match overrides** — `bias_alerts`, `match_overrides` (coordinator APIs)
+- **Manual placements** — `manual_placements` (coordinator API for placements outside the platform)
+- **Match flags and student match choices** — extend statuses, workflow, link to batch runs
+
+**Full recommendations and next steps:** [docs/EXPANDING.md](docs/EXPANDING.md).
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

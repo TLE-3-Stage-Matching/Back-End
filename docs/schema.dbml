@@ -1,0 +1,524 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table "users" {
+  "id" INTEGER [pk]
+  "role" VARCHAR(32) [not null]
+  "email" VARCHAR(255) [unique, not null]
+  "password_hash" TEXT
+  "first_name" VARCHAR(100) [not null]
+  "middle_name" VARCHAR(100)
+  "last_name" VARCHAR(100) [not null]
+  "phone" VARCHAR(50)
+  "profile_photo_url" TEXT
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "api_keys" {
+  "id" INTEGER [pk]
+  "user_id" INTEGER
+  "name" VARCHAR(255) [not null]
+  "key_hash" VARCHAR(255) [not null]
+  "plain_key" VARCHAR(128)
+  "plain_key_preview" VARCHAR(16)
+  "is_active" BOOLEAN
+  "last_used_at" TIMESTAMP
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "tags" {
+  "id" INTEGER [pk]
+  "name" VARCHAR(255) [not null]
+  "tag_type" VARCHAR(32) [not null]
+  "is_active" BOOLEAN
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "companies" {
+  "id" INTEGER [pk]
+  "name" VARCHAR(255) [not null]
+  "industry_tag_id" INTEGER
+  "email" VARCHAR(255)
+  "phone" VARCHAR(50)
+  "size_category" VARCHAR(50)
+  "photo_url" TEXT
+  "banner_url" VARCHAR(512)
+  "description" TEXT
+  "is_active" BOOLEAN
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "company_locations" {
+  "id" INTEGER [pk]
+  "company_id" INTEGER [not null]
+  "address_line" TEXT
+  "postal_code" VARCHAR(32)
+  "city" VARCHAR(255) [not null]
+  "country" VARCHAR(255) [not null]
+  "lat" DOUBLE
+  "lon" DOUBLE
+  "is_primary" BOOLEAN
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "company_users" {
+  "user_id" INTEGER [pk]
+  "company_id" INTEGER [not null]
+  "job_title" VARCHAR(255)
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "vacancies" {
+  "id" INTEGER [pk]
+  "company_id" INTEGER [not null]
+  "location_id" INTEGER
+  "title" VARCHAR(255) [not null]
+  "hours_per_week" INTEGER
+  "description" TEXT
+  "offer_text" TEXT
+  "expectations_text" TEXT
+  "status" VARCHAR(32)
+  "is_active" BOOLEAN
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "vacancy_requirements" {
+  "vacancy_id" INTEGER [not null]
+  "tag_id" INTEGER [not null]
+  "requirement_type" VARCHAR(16) [not null]
+  "importance" INTEGER
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+
+  Indexes {
+    (vacancy_id, tag_id, requirement_type) [pk]
+  }
+}
+
+Table "student_profiles" {
+  "user_id" INTEGER [pk]
+  "headline" VARCHAR(255)
+  "bio" TEXT
+  "address_line" TEXT
+  "postal_code" VARCHAR(32)
+  "city" VARCHAR(255)
+  "country" VARCHAR(255)
+  "searching_status" VARCHAR(32)
+  "exclude_demographics" BOOLEAN
+  "exclude_location" BOOLEAN
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "student_experiences" {
+  "id" INTEGER [pk]
+  "student_user_id" INTEGER [not null]
+  "title" VARCHAR(255) [not null]
+  "company_name" VARCHAR(255) [not null]
+  "start_date" DATE [not null]
+  "end_date" DATE
+  "description" TEXT
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "student_tags" {
+  "student_user_id" INTEGER [not null]
+  "tag_id" INTEGER [not null]
+  "is_active" BOOLEAN
+  "weight" INTEGER
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+
+  Indexes {
+    (student_user_id, tag_id) [pk]
+  }
+}
+
+Table "languages" {
+  "id" INTEGER [pk]
+  "name" VARCHAR(255) [unique, not null]
+}
+
+Table "language_levels" {
+  "id" INTEGER [pk]
+  "name" VARCHAR(255) [unique, not null]
+}
+
+Table "student_languages" {
+  "student_user_id" INTEGER [not null]
+  "language_id" INTEGER [not null]
+  "language_level_id" INTEGER [not null]
+  "is_active" BOOLEAN
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+
+  Indexes {
+    (student_user_id, language_id) [pk]
+  }
+}
+
+Table "student_preferences" {
+  "student_user_id" INTEGER [pk]
+  "desired_role_tag_id" INTEGER
+  "hours_per_week_min" INTEGER
+  "hours_per_week_max" INTEGER
+  "max_distance_km" INTEGER
+  "has_drivers_license" BOOLEAN
+  "compensation_numerical" INTEGER
+  "notes" TEXT
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "student_favorite_companies" {
+  "student_user_id" INTEGER [not null]
+  "company_id" INTEGER [not null]
+  "created_at" TIMESTAMP
+
+  Indexes {
+    (student_user_id, company_id) [pk]
+  }
+}
+
+Table "student_saved_vacancies" {
+  "student_user_id" INTEGER [not null]
+  "vacancy_id" INTEGER [not null]
+  "created_at" TIMESTAMP
+  "removed_at" TIMESTAMP
+
+  Indexes {
+    (student_user_id, vacancy_id) [pk]
+  }
+}
+
+Table "ai_prompts" {
+  "id" INTEGER [pk]
+  "name" VARCHAR(255) [unique, not null]
+  "template_text" TEXT [not null]
+  "created_at" TIMESTAMP
+}
+
+Table "ai_runs" {
+  "id" INTEGER [pk]
+  "model_id" INTEGER [not null]
+  "prompt_id" INTEGER
+  "run_type" VARCHAR(32) [not null]
+  "criteria_version_id" INTEGER
+  "created_by_user_id" INTEGER
+  "notes" TEXT
+  "created_at" TIMESTAMP
+}
+
+Table "match_vacancy_scores" {
+  "id" INTEGER [pk]
+  "run_id" INTEGER [not null]
+  "student_user_id" INTEGER [not null]
+  "vacancy_id" INTEGER [not null]
+  "match_score" INTEGER [not null]
+  "full_analysis_text" TEXT
+  "created_at" TIMESTAMP
+}
+
+Table "match_vacancy_factors" {
+  "id" INTEGER [pk]
+  "match_vacancy_score_id" INTEGER [not null]
+  "factor_label" VARCHAR(255) [not null]
+  "impact" INTEGER [not null]
+  "polarity" VARCHAR(16) [not null]
+  "factor_type" VARCHAR(16)
+  "tag_id" INTEGER
+  "created_at" TIMESTAMP
+}
+
+Table "match_flags" {
+  "id" INTEGER [pk]
+  "created_at" TIMESTAMP
+  "student_user_id" INTEGER [not null]
+  "company_id" INTEGER
+  "vacancy_id" INTEGER
+  "disputed_factor" TEXT [not null]
+  "message" TEXT
+  "status" VARCHAR(16)
+  "coordinator_user_id" INTEGER
+  "resolution_note" TEXT
+}
+
+Table "bias_alerts" {
+  "id" INTEGER [pk]
+  "created_at" TIMESTAMP
+  "alert_type" VARCHAR(32) [not null]
+  "company_id" INTEGER
+  "vacancy_id" INTEGER
+  "must_have_snapshot" TEXT
+  "remaining_candidates" INTEGER
+  "bias_tip" TEXT
+  "status" VARCHAR(16)
+  "coordinator_user_id" INTEGER
+}
+
+Table "match_overrides" {
+  "id" INTEGER [pk]
+  "created_at" TIMESTAMP
+  "coordinator_user_id" INTEGER [not null]
+  "student_user_id" INTEGER [not null]
+  "company_id" INTEGER
+  "vacancy_id" INTEGER
+  "action" VARCHAR(16) [not null]
+  "reason" TEXT
+  "expires_at" TIMESTAMP
+}
+
+Table "manual_placements" {
+  "id" INTEGER [pk]
+  "created_at" TIMESTAMP
+  "student_user_id" INTEGER [not null]
+  "company_name" VARCHAR(255) [not null]
+  "contact_email" VARCHAR(255)
+  "description" TEXT
+  "start_date" DATE
+  "status" VARCHAR(16)
+  "coordinator_user_id" INTEGER
+  "notes" TEXT
+}
+
+Enum conversation_type {
+  vacancy_chat
+  student_admin
+  admin_company
+}
+
+Table "conversations" {
+  "id" INTEGER [pk]
+
+  // Type of conversation
+  "conversation_type" conversation_type [not null]
+
+  // Context
+  "vacancy_id" INTEGER
+  "company_id" INTEGER
+  "student_user_id" INTEGER
+  "admin_user_id" INTEGER
+
+  "created_by_user_id" INTEGER [not null]
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Table "messages" {
+  "id" INTEGER [pk]
+  "conversation_id" INTEGER [not null]
+  "sender_user_id" INTEGER [not null]
+  "body" TEXT [not null]
+  "created_at" TIMESTAMP
+}
+
+Table "student_coordinator_assignments" {
+  "id" INTEGER [pk]
+  "student_user_id" INTEGER [not null]
+  "coordinator_user_id" INTEGER [not null]
+  "assigned_at" TIMESTAMP
+  "unassigned_at" TIMESTAMP
+  "assigned_by_user_id" INTEGER
+  "note" TEXT
+}
+
+Enum match_choice_status {
+  shortlisted
+  requested
+  approved
+  rejected
+  withdrawn
+}
+
+Table "student_match_choices" {
+  "id" INTEGER [pk]
+  "student_user_id" INTEGER [not null]
+  "vacancy_id" INTEGER [not null]
+  "source_run_id" INTEGER               // welke ai_run leverde deze match op
+  "source_match_score_id" INTEGER       // optioneel: link naar match_vacancy_scores.id
+
+  "status" match_choice_status [not null]
+  "student_note" TEXT
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+
+  "decided_by_user_id" INTEGER          // coordinator/admin die approved/rejected
+  "decided_at" TIMESTAMP
+  "decision_note" TEXT
+}
+
+Table "vacancy_comments" {
+  "id" INTEGER [pk]
+  "vacancy_id" INTEGER [not null]
+  "author_user_id" INTEGER [not null]   // coordinator/admin
+  "comment" TEXT [not null]
+  "created_at" TIMESTAMP
+  "updated_at" TIMESTAMP
+}
+
+Enum ai_feature_type {
+  skill_tags
+  trait_tags
+  education_tags
+  languages
+  experience_years
+  preferences_hours
+  preferences_distance
+  drivers_license
+  other
+}
+
+Table "ai_criteria_versions" {
+  "id" INTEGER [pk]
+  "name" VARCHAR(255) [not null]        // e.g. "Baseline v1", "Tweaked by Coordinator"
+  "description" TEXT
+  "created_by_user_id" INTEGER [not null]
+  "created_at" TIMESTAMP
+  "is_active" BOOLEAN
+}
+
+Table "ai_criteria_rules" {
+  "id" INTEGER [pk]
+  "criteria_version_id" INTEGER [not null]
+  "feature_type" ai_feature_type [not null]
+
+  // weight / behavior
+  "weight" DOUBLE [not null]            // e.g. 0.35
+  "min_required" INTEGER                // optional threshold (e.g. min skills matched)
+  "penalty_if_missing" DOUBLE           // e.g. -0.10
+  "note" TEXT
+
+  "created_at" TIMESTAMP
+}
+
+Ref:"tags"."id" < "companies"."industry_tag_id"
+
+Ref:"companies"."id" < "company_locations"."company_id"
+
+Ref:"users"."id" < "company_users"."user_id"
+
+Ref:"companies"."id" < "company_users"."company_id"
+
+Ref:"companies"."id" < "vacancies"."company_id"
+
+Ref:"company_locations"."id" < "vacancies"."location_id"
+
+Ref:"vacancies"."id" < "vacancy_requirements"."vacancy_id"
+
+Ref:"tags"."id" < "vacancy_requirements"."tag_id"
+
+Ref:"users"."id" < "student_profiles"."user_id"
+
+Ref:"users"."id" < "student_experiences"."student_user_id"
+
+Ref:"users"."id" < "student_tags"."student_user_id"
+
+Ref:"tags"."id" < "student_tags"."tag_id"
+
+Ref:"users"."id" < "student_languages"."student_user_id"
+
+Ref:"languages"."id" < "student_languages"."language_id"
+
+Ref:"language_levels"."id" < "student_languages"."language_level_id"
+
+Ref:"users"."id" < "student_preferences"."student_user_id"
+
+Ref:"tags"."id" < "student_preferences"."desired_role_tag_id"
+
+Ref:"users"."id" < "student_favorite_companies"."student_user_id"
+
+Ref:"companies"."id" < "student_favorite_companies"."company_id"
+
+Ref:"users"."id" < "student_saved_vacancies"."student_user_id"
+
+Ref:"vacancies"."id" < "student_saved_vacancies"."vacancy_id"
+
+Ref:"ai_prompts"."id" < "ai_runs"."prompt_id"
+
+Ref:"users"."id" < "ai_runs"."created_by_user_id"
+
+Ref:"ai_runs"."id" < "match_vacancy_scores"."run_id"
+
+Ref:"users"."id" < "match_vacancy_scores"."student_user_id"
+
+Ref:"vacancies"."id" < "match_vacancy_scores"."vacancy_id"
+
+Ref:"match_vacancy_scores"."id" < "match_vacancy_factors"."match_vacancy_score_id"
+
+Ref:"tags"."id" < "match_vacancy_factors"."tag_id"
+
+Ref:"users"."id" < "match_flags"."student_user_id"
+
+Ref:"companies"."id" < "match_flags"."company_id"
+
+Ref:"vacancies"."id" < "match_flags"."vacancy_id"
+
+Ref:"users"."id" < "match_flags"."coordinator_user_id"
+
+Ref:"companies"."id" < "bias_alerts"."company_id"
+
+Ref:"vacancies"."id" < "bias_alerts"."vacancy_id"
+
+Ref:"users"."id" < "bias_alerts"."coordinator_user_id"
+
+Ref:"users"."id" < "match_overrides"."coordinator_user_id"
+
+Ref:"users"."id" < "match_overrides"."student_user_id"
+
+Ref:"companies"."id" < "match_overrides"."company_id"
+
+Ref:"vacancies"."id" < "match_overrides"."vacancy_id"
+
+Ref:"users"."id" < "manual_placements"."student_user_id"
+
+Ref:"users"."id" < "manual_placements"."coordinator_user_id"
+
+Ref:"vacancies"."id" < "conversations"."vacancy_id"
+
+Ref:"companies"."id" < "conversations"."company_id"
+
+Ref:"users"."id" < "conversations"."student_user_id"
+
+Ref:"users"."id" < "conversations"."admin_user_id"
+
+Ref:"users"."id" < "conversations"."created_by_user_id"
+
+Ref:"conversations"."id" < "messages"."conversation_id"
+
+Ref:"users"."id" < "messages"."sender_user_id"
+
+Ref:"users"."id" < "student_coordinator_assignments"."student_user_id"
+
+Ref:"users"."id" < "student_coordinator_assignments"."coordinator_user_id"
+
+Ref:"users"."id" < "student_coordinator_assignments"."assigned_by_user_id"
+
+Ref:"users"."id" < "student_match_choices"."student_user_id"
+
+Ref:"vacancies"."id" < "student_match_choices"."vacancy_id"
+
+Ref:"ai_runs"."id" < "student_match_choices"."source_run_id"
+
+Ref:"match_vacancy_scores"."id" < "student_match_choices"."source_match_score_id"
+
+Ref:"users"."id" < "student_match_choices"."decided_by_user_id"
+
+Ref:"vacancies"."id" < "vacancy_comments"."vacancy_id"
+
+Ref:"users"."id" < "vacancy_comments"."author_user_id"
+
+Ref:"users"."id" < "ai_criteria_versions"."created_by_user_id"
+
+Ref:"ai_criteria_versions"."id" < "ai_criteria_rules"."criteria_version_id"
+
+Ref:"ai_criteria_versions"."id" < "ai_runs"."criteria_version_id"
+
+Ref:"users"."id" < "api_keys"."user_id"

@@ -1642,6 +1642,49 @@ considered.
 
 For how the score is computed, see [How student-vacancy matching works](#how-student-vacancy-matching-works) below.
 
+---
+
+### Student vacancy matching sandbox (v2)
+
+Base path `/api/v2`; auth: `X-API-KEY` + Bearer token + student role.
+
+This sandbox lets a student **simulate** matching by providing a temporary set of **skill** and **trait** tags in the request body. The tags are **not saved** and the student's profile remains unchanged.
+
+- Only `tag_type` **skill** and **trait** are accepted in the sandbox request body.
+- Limits: max **6** skills and max **4** traits.
+- Weight: `1..5`.
+- If `tags` is an empty array, the sandbox behaves like the normal endpoints (uses the real profile tags).
+
+| Method | Path                                           | Description |
+|--------|------------------------------------------------|-------------|
+| POST   | `/student/sandbox/top-matches`                 | Top 3 best-matching vacancies using sandbox skill/trait tags. |
+| POST   | `/student/sandbox/vacancies/with-scores`       | All eligible vacancies with scores using sandbox skill/trait tags. |
+| POST   | `/student/sandbox/vacancies/{vacancy}`         | Full vacancy detail plus sandbox match score and subscores. |
+| POST   | `/student/sandbox/vacancies/{vacancy}/detail`  | Single vacancy score explanation using sandbox tags. |
+
+All sandbox endpoints accept the same JSON body:
+
+```json
+{
+  "tags": [
+    { "tag_id": 1, "weight": 3 },
+    { "tag_id": 2, "weight": 5 }
+  ]
+}
+```
+
+All sandbox responses include a top-level flag: `"sandbox": true`.
+
+**Frontend usage (recommended):**
+
+- Fetch selectable tags with `GET /tags?tag_type=skill` and `GET /tags?tag_type=trait`.
+- Prefill the sandbox editor from `GET /student/tags` (filter to skill/trait) and keep edits **client-side only**.
+- When the student changes tags, POST the sandbox body to one of:
+  - `/student/sandbox/top-matches` (quick feedback)
+  - `/student/sandbox/vacancies/with-scores` (full list)
+  - `/student/sandbox/vacancies/{vacancy}` / `/detail` (vacancy detail & explanation)
+- Use the returned `"sandbox": true` flag in the UI to show “preview / not saved”.
+
 #### Top matches (top 3)
 
 |            |                                           |
@@ -1662,18 +1705,27 @@ nice-to-have + penalty). Only open vacancies from active companies are included.
         {
             "vacancy_id": 10,
             "title": "Backend developer",
+            "description": "We are looking for a backend developer...",
+            "tags": [
+                { "id": 1, "name": "PHP", "tag_type": "skill", "requirement_type": "must_have", "importance": 5 },
+                { "id": 2, "name": "Laravel", "tag_type": "skill", "requirement_type": "nice_to_have", "importance": 3 }
+            ],
             "company": "Acme Corp",
             "score": 85
         },
         {
             "vacancy_id": 12,
             "title": "Junior PHP developer",
+            "description": null,
+            "tags": [],
             "company": "Tech Co",
             "score": 72
         }
     ]
 }
 ```
+
+Each item includes `description` (vacancy description, may be null) and `tags` (array of vacancy requirement tags with `id`, `name`, `tag_type`, `requirement_type`, `importance`).
 
 </details>
 
@@ -1699,6 +1751,11 @@ pagination; use `GET /student/vacancies-with-scores` for paginated results.
         {
             "vacancy_id": 10,
             "title": "Backend developer",
+            "description": "We are looking for a backend developer...",
+            "tags": [
+                { "id": 1, "name": "PHP", "tag_type": "skill", "requirement_type": "must_have", "importance": 5 },
+                { "id": 2, "name": "Laravel", "tag_type": "skill", "requirement_type": "nice_to_have", "importance": 3 }
+            ],
             "company": "Acme Corp",
             "score": 85,
             "must_have_misses": [
@@ -1715,6 +1772,8 @@ pagination; use `GET /student/vacancies-with-scores` for paginated results.
     ]
 }
 ```
+
+Each item includes `description` (vacancy description, may be null) and `tags` (array of vacancy requirement tags with `id`, `name`, `tag_type`, `requirement_type`, `importance`). The response also includes `score_feedback`, `human_explanation`, and `algorithm_transparency`.
 
 </details>
 

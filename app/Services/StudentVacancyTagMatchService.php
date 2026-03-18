@@ -26,8 +26,8 @@ class StudentVacancyTagMatchService
     public function __construct()
     {
         $this->tagTypeLimits = config('matching.tag_type_limits', []);
-        $this->defaultStudentWeight = (int) config('matching.default_student_weight', 1);
-        $this->defaultVacancyImportance = (int) config('matching.default_vacancy_importance', 1);
+        $this->defaultStudentWeight = (int) config('matching.default_student_weight', 3);
+        $this->defaultVacancyImportance = (int) config('matching.default_vacancy_importance', 3);
         $this->subscoreCategories = config('matching.subscore_categories', ['skill', 'trait']);
         $this->matchTagTypes = config('matching.match_tag_types', ['skill', 'trait']);
     }
