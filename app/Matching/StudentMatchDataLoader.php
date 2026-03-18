@@ -46,7 +46,7 @@ class StudentMatchDataLoader
             return new VacancyTagDTO(
                 tagId: $req->tag_id,
                 requirementType: $req->requirement_type,
-                importance: $req->importance,
+                importance: $req->importance ?? (int) config('matching.default_vacancy_importance', 3),
             );
         })->all();
     }
@@ -86,7 +86,7 @@ class StudentMatchDataLoader
             $result[$vacancyId][] = new VacancyTagDTO(
                 tagId: $req->tag_id,
                 requirementType: $req->requirement_type,
-                importance: $req->importance,
+                importance: $req->importance ?? (int) config('matching.default_vacancy_importance', 3),
             );
         }
 

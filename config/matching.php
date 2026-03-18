@@ -30,8 +30,8 @@ return [
     | Default weights when not set
     |--------------------------------------------------------------------------
     */
-    'default_student_weight' => 1,
-    'default_vacancy_importance' => 1,
+    'default_student_weight' => 3,
+    'default_vacancy_importance' => 3,
 
     /*
     |--------------------------------------------------------------------------
