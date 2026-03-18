@@ -152,6 +152,8 @@ class StudentVacancyMatchController extends Controller
                 $data[] = [
                     'vacancy_id' => $result->vacancyId,
                     'title' => $details['title'],
+                    'description' => $details['description'] ?? null,
+                    'tags' => $details['tags'] ?? [],
                     'company' => $details['company_name'],
                     'score' => $result->score,
                     'score_feedback' => $this->buildScoreFeedback($result->score),
@@ -238,6 +240,8 @@ class StudentVacancyMatchController extends Controller
                 $data[] = [
                     'vacancy_id' => $result->vacancyId,
                     'title' => $details['title'],
+                    'description' => $details['description'] ?? null,
+                    'tags' => $details['tags'] ?? [],
                     'company' => $details['company_name'],
                     'score' => $result->score,
                     'score_feedback' => $this->buildScoreFeedback($result->score),

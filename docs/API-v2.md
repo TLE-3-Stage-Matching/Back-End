@@ -1662,18 +1662,27 @@ nice-to-have + penalty). Only open vacancies from active companies are included.
         {
             "vacancy_id": 10,
             "title": "Backend developer",
+            "description": "We are looking for a backend developer...",
+            "tags": [
+                { "id": 1, "name": "PHP", "tag_type": "skill", "requirement_type": "must_have", "importance": 5 },
+                { "id": 2, "name": "Laravel", "tag_type": "skill", "requirement_type": "nice_to_have", "importance": 3 }
+            ],
             "company": "Acme Corp",
             "score": 85
         },
         {
             "vacancy_id": 12,
             "title": "Junior PHP developer",
+            "description": null,
+            "tags": [],
             "company": "Tech Co",
             "score": 72
         }
     ]
 }
 ```
+
+Each item includes `description` (vacancy description, may be null) and `tags` (array of vacancy requirement tags with `id`, `name`, `tag_type`, `requirement_type`, `importance`).
 
 </details>
 
@@ -1699,6 +1708,11 @@ pagination; use `GET /student/vacancies-with-scores` for paginated results.
         {
             "vacancy_id": 10,
             "title": "Backend developer",
+            "description": "We are looking for a backend developer...",
+            "tags": [
+                { "id": 1, "name": "PHP", "tag_type": "skill", "requirement_type": "must_have", "importance": 5 },
+                { "id": 2, "name": "Laravel", "tag_type": "skill", "requirement_type": "nice_to_have", "importance": 3 }
+            ],
             "company": "Acme Corp",
             "score": 85,
             "must_have_misses": [
@@ -1715,6 +1729,8 @@ pagination; use `GET /student/vacancies-with-scores` for paginated results.
     ]
 }
 ```
+
+Each item includes `description` (vacancy description, may be null) and `tags` (array of vacancy requirement tags with `id`, `name`, `tag_type`, `requirement_type`, `importance`). The response also includes `score_feedback`, `human_explanation`, and `algorithm_transparency`.
 
 </details>
 
