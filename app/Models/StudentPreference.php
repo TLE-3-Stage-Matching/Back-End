@@ -19,6 +19,7 @@ class StudentPreference extends Model
         'max_distance_km',
         'has_drivers_license',
         'notes',
+        'compensation_numerical',
     ];
 
     protected function casts(): array

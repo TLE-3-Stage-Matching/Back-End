@@ -32,7 +32,7 @@ class UpdateVacancyRequest extends FormRequest
             'tags.*.name' => ['required_without:tags.*.id', 'nullable', 'string', 'max:255'],
             'tags.*.tag_type' => ['required_without:tags.*.id', 'nullable', 'string', 'max:32'],
             'tags.*.requirement_type' => ['nullable', 'string', 'max:16'],
-            'tags.*.importance' => ['nullable', 'integer'],
+            'tags.*.importance' => ['nullable', 'integer', 'min:1', 'max:5'],
         ];
     }
 

@@ -23,8 +23,8 @@ class SyncStudentTagsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'tags' => ['required', 'array'],
-            'tags.*.tag_id' => ['required', 'integer', 'exists:tags,id'],
+            'tags' => ['nullable', 'array'],
+            'tags.*.tag_id' => ['integer', 'exists:tags,id'],
             'tags.*.is_active' => ['nullable', 'boolean'],
             'tags.*.weight' => ['nullable', 'integer', 'min:1', 'max:5'],
         ];
@@ -37,15 +37,15 @@ class SyncStudentTagsRequest extends FormRequest
             if ($tags === []) {
                 return;
             }
-            $tagIds = array_map(fn ($t) => (int) $t['tag_id'], $tags);
+            $tagIds = array_map(fn($t) => (int)$t['tag_id'], $tags);
             $tagTypes = Tag::whereIn('id', $tagIds)->pluck('tag_type', 'id')->all();
 
             $majorCount = 0;
             $activeSkillCount = 0;
             $activeTraitCount = 0;
             foreach ($tags as $t) {
-                $tagId = (int) $t['tag_id'];
-                $isActive = ! array_key_exists('is_active', $t) || $t['is_active'];
+                $tagId = (int)$t['tag_id'];
+                $isActive = !array_key_exists('is_active', $t) || $t['is_active'];
                 $type = $tagTypes[$tagId] ?? null;
                 if ($type === null) {
                     continue;
