@@ -80,7 +80,7 @@ class VacancyController extends Controller
                         'vacancy_id' => $vacancy->id,
                         'tag_id' => $tag->id,
                         'requirement_type' => $tagInput['requirement_type'] ?? 'skill',
-                        'importance' => $tagInput['importance'] ?? null,
+                        'importance' => $tagInput['importance'] ?? 3,
                     ]);
                 }
             }
@@ -160,7 +160,7 @@ class VacancyController extends Controller
                             'vacancy_id' => $vacancy->id,
                             'tag_id' => $tag->id,
                             'requirement_type' => $tagInput['requirement_type'] ?? 'skill',
-                            'importance' => $tagInput['importance'] ?? null,
+                            'importance' => $tagInput['importance'] ?? 3,
                         ]);
                     }
                 }
