@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,21 +25,44 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'role' => UserRole::Student,
             'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'password_hash' => 'password',
+            'first_name' => fake()->firstName(),
+            'middle_name' => null,
+            'last_name' => fake()->lastName(),
+            'phone' => fake()->phoneNumber(),
+            'profile_photo_url' => null,
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Configure the model as a student.
      */
-    public function unverified(): static
+    public function student(): static
     {
         return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+            'role' => UserRole::Student,
+        ]);
+    }
+
+    /**
+     * Configure the model as a coordinator.
+     */
+    public function coordinator(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Coordinator,
+        ]);
+    }
+
+    /**
+     * Configure the model as a company user.
+     */
+    public function company(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Company,
         ]);
     }
 }
