@@ -26,12 +26,12 @@ class UserFactory extends Factory
     {
         return [
             'role' => UserRole::Student,
-            'email' => fake()->unique()->safeEmail(),
+            'email' => \fake()->unique()->safeEmail(),
             'password_hash' => 'password',
-            'first_name' => fake()->firstName(),
+            'first_name' => \fake()->firstName(),
             'middle_name' => null,
-            'last_name' => fake()->lastName(),
-            'phone' => fake()->phoneNumber(),
+            'last_name' => \fake()->lastName(),
+            'phone' => \fake()->phoneNumber(),
             'profile_photo_url' => null,
         ];
     }
