@@ -21,6 +21,7 @@ class UpdateStudentPreferencesRequest extends FormRequest
             'max_distance_km' => ['nullable', 'integer', 'min:1'],
             'has_drivers_license' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string'],
+            'compensation_numerical' => ['nullable', 'integer', 'min:0', 'max:100'],
         ];
     }
 }

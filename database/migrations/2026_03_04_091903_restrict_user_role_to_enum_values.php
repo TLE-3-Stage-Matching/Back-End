@@ -3,8 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -34,7 +33,7 @@ return new class extends Migration
                 END;
             ");
         } else {
-            DB::statement(\"ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (role IN ('student', 'coordinator', 'company', 'admin', 'dev'))\");
+            DB::statement("ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (role IN ('student', 'coordinator', 'company', 'admin', 'dev'))");
         }
     }
 

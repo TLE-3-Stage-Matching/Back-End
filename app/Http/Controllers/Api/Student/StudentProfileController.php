@@ -131,7 +131,7 @@ class StudentProfileController extends Controller
         $experiences = $user->studentExperiences()->orderBy('start_date', 'desc')->get();
 
         return response()->json([
-            'data' => $experiences->map(fn ($exp) => $this->formatExperience($exp))->toArray(),
+            'data' => $experiences->map(fn($exp) => $this->formatExperience($exp))->toArray(),
             'links' => ['self' => url('/api/v1/student/experiences')],
         ]);
     }
@@ -215,7 +215,7 @@ class StudentProfileController extends Controller
 
         return response()->json([
             'message' => 'Languages updated successfully.',
-            'data' => $user->studentLanguages->map(fn ($sl) => $this->formatLanguage($sl))->toArray(),
+            'data' => $user->studentLanguages->map(fn($sl) => $this->formatLanguage($sl))->toArray(),
             'links' => ['self' => url('/api/v1/student/languages')],
         ]);
     }
@@ -229,7 +229,7 @@ class StudentProfileController extends Controller
         $user->load('studentLanguages.language', 'studentLanguages.languageLevel');
 
         return response()->json([
-            'data' => $user->studentLanguages->map(fn ($sl) => $this->formatLanguage($sl))->toArray(),
+            'data' => $user->studentLanguages->map(fn($sl) => $this->formatLanguage($sl))->toArray(),
             'links' => ['self' => url('/api/v1/student/languages')],
         ]);
     }
@@ -241,12 +241,19 @@ class StudentProfileController extends Controller
     {
         $user = auth()->user();
         $validated = $request->validated();
+        $tagType = request()->query('tag_type');
 
-        // Delete existing tags
-        StudentTag::where('student_user_id', $user->id)->delete();
+        // ❗ alleen tags van dit type verwijderen
+        StudentTag::where('student_user_id', $user->id)
+            ->whereHas('tag', function ($q) use ($tagType) {
+                if ($tagType) {
+                    $q->where('tag_type', $tagType);
+                }
+            })
+            ->delete();
 
-        // Create new tags
-        foreach ($validated['tags'] as $tagData) {
+        // ❗ nieuwe tags toevoegen (mag leeg zijn)
+        foreach ($validated['tags'] ?? [] as $tagData) {
             StudentTag::create([
                 'student_user_id' => $user->id,
                 'tag_id' => $tagData['tag_id'],
@@ -257,9 +264,13 @@ class StudentProfileController extends Controller
 
         $user->load('studentTags.tag');
 
+        $tags = $user->studentTags->filter(function ($st) use ($tagType) {
+            return !$tagType || $st->tag?->tag_type === $tagType;
+        });
+
         return response()->json([
             'message' => 'Tags updated successfully.',
-            'data' => $user->studentTags->map(fn ($st) => $this->formatTag($st))->toArray(),
+            'data' => $tags->map(fn($st) => $this->formatTag($st))->values(),
             'links' => ['self' => url('/api/v1/student/tags')],
         ]);
     }
@@ -270,10 +281,16 @@ class StudentProfileController extends Controller
     public function listTags(): JsonResponse
     {
         $user = auth()->user();
-        $user->load('studentTags.tag');
+        $tagType = request()->query('tag_type');
+
+        $user->load(['studentTags.tag']);
+
+        $tags = $user->studentTags->filter(function ($st) use ($tagType) {
+            return !$tagType || $st->tag?->tag_type === $tagType;
+        });
 
         return response()->json([
-            'data' => $user->studentTags->map(fn ($st) => $this->formatTag($st))->toArray(),
+            'data' => $tags->map(fn($st) => $this->formatTag($st))->values(),
             'links' => ['self' => url('/api/v1/student/tags')],
         ]);
     }
@@ -306,9 +323,9 @@ class StudentProfileController extends Controller
                 'exclude_demographics' => $user->studentProfile->exclude_demographics,
                 'exclude_location' => $user->studentProfile->exclude_location,
             ] : null,
-            'student_experiences' => $user->studentExperiences->map(fn ($exp) => $this->formatExperience($exp))->toArray(),
-            'student_tags' => $user->studentTags->map(fn ($st) => $this->formatTag($st))->toArray(),
-            'student_languages' => $user->studentLanguages->map(fn ($sl) => $this->formatLanguage($sl))->toArray(),
+            'student_experiences' => $user->studentExperiences->map(fn($exp) => $this->formatExperience($exp))->toArray(),
+            'student_tags' => $user->studentTags->map(fn($st) => $this->formatTag($st))->toArray(),
+            'student_languages' => $user->studentLanguages->map(fn($sl) => $this->formatLanguage($sl))->toArray(),
             'student_preferences' => $this->formatPreferences($user->studentPreferences),
         ];
     }
@@ -337,6 +354,7 @@ class StudentProfileController extends Controller
             'hours_per_week_max' => $prefs->hours_per_week_max,
             'max_distance_km' => $prefs->max_distance_km,
             'has_drivers_license' => $prefs->has_drivers_license,
+            'compensation_numerical' => $prefs->compensation_numerical,
             'notes' => $prefs->notes,
             'desired_role_tag' => $prefs->relationLoaded('desiredRoleTag') && $prefs->desiredRoleTag ? [
                 'id' => $prefs->desiredRoleTag->id,
