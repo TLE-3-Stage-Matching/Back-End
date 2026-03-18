@@ -2335,6 +2335,7 @@ Update the student note and/or set status to `withdrawn`. Only allowed when the 
         "hours_per_week_max": 40,
         "max_distance_km": 50,
         "has_drivers_license": true,
+        "compensation_numerical": 75,
         "notes": "Prefer remote work",
         "desired_role_tag": {
             "id": 2,
@@ -2384,18 +2385,20 @@ Update the student note and/or set status to `withdrawn`. Only allowed when the 
     "hours_per_week_max": 40,
     "max_distance_km": 50,
     "has_drivers_license": true,
+    "compensation_numerical": 75,
     "notes": "Prefer remote work"
 }
 ```
 
-| Field               | Type           | Notes                 |
-|---------------------|----------------|-----------------------|
-| desired_role_tag_id | number or null | Must exist in `tags`  |
-| hours_per_week_min  | number or null | 1–168                 |
-| hours_per_week_max  | number or null | 1–168, must be >= min |
-| max_distance_km     | number or null | Min 1                 |
-| has_drivers_license | boolean        |                       |
-| notes               | string or null |                       |
+| Field                  | Type           | Notes                            |
+|------------------------|----------------|----------------------------------|
+| desired_role_tag_id    | number or null | Must exist in `tags`             |
+| hours_per_week_min     | number or null | 1–168                            |
+| hours_per_week_max     | number or null | 1–168, must be >= min            |
+| max_distance_km        | number or null | Min 1                            |
+| has_drivers_license    | boolean        |                                  |
+| compensation_numerical | number or null | 0–100 (compensation preference) |
+| notes                  | string or null |                                  |
 
 **Success (200):** `{ "message": "Preferences updated successfully.", "data": <preferences>, "links": {...} }`
 
@@ -2595,6 +2598,10 @@ Replaces all languages for the student. Send the complete list of languages.
 | **Path**   | `/student/tags`                           |
 | **Auth**   | `X-API-KEY` + Bearer token + student role |
 
+| Query param | Type   | Required | Notes                                                                 |
+|-------------|--------|----------|-----------------------------------------------------------------------|
+| tag_type    | string | No       | Filter by tag type (e.g. `skill`, `trait`, `industry`, `major`). Omit to return all. |
+
 **Success (200):**
 
 ```json
@@ -2627,8 +2634,11 @@ Replaces all languages for the student. Send the complete list of languages.
 | **Path**   | `/student/tags`             |
 | **Auth**   | Bearer token + student role |
 
-Replaces all tags/skills for the student. Send the complete list of tags. This is a **sync** operation”existing tags are
-removed and replaced with the new list provided.
+| Query param | Type   | Required | Notes                                                                                                                                 |
+|-------------|--------|----------|---------------------------------------------------------------------------------------------------------------------------------------|
+| tag_type    | string | No       | When set (e.g. `skill`, `trait`, `industry`, `major`), only tags of that type are replaced. Other tag types are left unchanged. Omit to replace all student tags. |
+
+Replaces all tags/skills for the student. Send the complete list of tags for the scope (all tags or that type only). This is a **sync** operation—existing tags are removed and replaced with the new list provided. Sending an empty array `"tags": []` is valid: with `?tag_type=` it removes all tags of that type; without `tag_type` it removes all tags.
 
 **Request body:**
 
@@ -2654,12 +2664,12 @@ removed and replaced with the new list provided.
 }
 ```
 
-| Field            | Type    | Required | Notes                                  |
-|------------------|---------|----------|----------------------------------------|
-| tags             | array   | Yes      | List of tag entries                    |
-| tags.*.tag_id    | number  | Yes      | Must exist in `tags` table             |
-| tags.*.is_active | boolean | No       | Defaults to true                       |
-| tags.*.weight    | number  | No       | 0–100, represents proficiency/priority |
+| Field            | Type    | Required | Notes                                                                 |
+|------------------|---------|----------|-----------------------------------------------------------------------|
+| tags             | array   | No       | List of tag entries. May be empty to remove all (or all of that type). |
+| tags.*.tag_id    | number  | Yes*     | Must exist in `tags` table (*when `tags` is non-empty)                |
+| tags.*.is_active | boolean | No       | Defaults to true                                                      |
+| tags.*.weight    | number  | No       | 0–100, represents proficiency/priority                                |
 
 #### Understanding the `weight` field
 
