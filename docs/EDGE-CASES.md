@@ -33,6 +33,15 @@ Behaviour is covered by [tests/Unit/Matching/VacancyMatchingServiceTest.php](../
 | Tag **weight** &gt; 5 | 422, validation error on `tags.0.weight`. | [TESTS.md](TESTS.md) |
 | Weight **omitted** | Defaults to **3**. | [TESTS.md](TESTS.md) |
 
+### Student matching sandbox (skill/trait only)
+
+| Rule | Error | Reference |
+|------|--------|-----------|
+| Sandbox body contains non **skill**/**trait** tag | 422, validation error on `tags`. | [TESTS.md](TESTS.md) (StudentSandboxMatchTest) |
+| More than **6** skill tags | 422, validation error on `tags`. | [TESTS.md](TESTS.md) (StudentSandboxMatchTest) |
+| More than **4** trait tags | 422, validation error on `tags`. | [TESTS.md](TESTS.md) |
+| Empty `tags` array | Allowed; uses the student's real tags. | [TESTS.md](TESTS.md) (StudentSandboxMatchTest) |
+
 ### Student (preferences)
 
 | Rule | Error | Reference |

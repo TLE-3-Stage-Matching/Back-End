@@ -218,6 +218,22 @@ Uses `RefreshDatabase`. Helper `makeApiKey()` creates an active API key for v2 e
 
 | Test | What | How |
 |-----|------|-----|
+
+---
+
+### 4.4 StudentSandboxMatchTest
+
+**File:** [tests/Feature/StudentSandboxMatchTest.php](tests/Feature/StudentSandboxMatchTest.php)  
+**Covers:** Student vacancy matching sandbox (v2) — POST endpoints that simulate match results using temporary skill/trait tags, without writing to the database.
+
+Uses `RefreshDatabase`. Creates an API key + student + vacancy requirements and asserts:
+
+| Test | What | How |
+|-----|------|-----|
+| `test_student_can_get_sandbox_top_matches_and_nothing_is_persisted` | Sandbox returns results with `sandbox: true` and does not alter `student_tags`. | POST `/api/v2/student/sandbox/top-matches` with skill/trait tags; assert 200 and compare DB `student_tags` before/after. |
+| `test_sandbox_rejects_non_skill_or_trait_tags` | Only skill/trait tags are allowed. | POST with a non skill/trait tag id; assert 422. |
+| `test_sandbox_rejects_over_limit_skill_tags` | Enforces skill limit. | POST with 7 skills; assert 422. |
+| `test_sandbox_empty_tags_behaves_like_real_profile_for_single_vacancy_score` | Empty `tags: []` behaves like the real endpoints. | Compare `GET /student/vacancies/{id}` score with POST sandbox score using `tags: []`. |
 | `test_vacancies_with_scores_industry_tag_id_filters_by_company_industry` | `industry_tag_id` query filters by company industry. | Two industries, two companies (one vacancy each); student; GET vacancies-with-scores with one industry_tag_id; assert 200, one item, correct vacancy title and subscores present. |
 
 ---

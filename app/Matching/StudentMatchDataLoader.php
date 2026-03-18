@@ -33,6 +33,52 @@ class StudentMatchDataLoader
     }
 
     /**
+     * Build an effective student tag set for sandbox matching:
+     * - Keep the student's real active tags EXCEPT skill/trait
+     * - Replace skill/trait with sandbox-provided tags (not persisted)
+     *
+     * @param  StudentTagDTO[]  $sandboxSkillTraitTags
+     * @return StudentTagDTO[]
+     */
+    public function loadEffectiveStudentTagsForSandbox(int $studentUserId, array $sandboxSkillTraitTags): array
+    {
+        if ($sandboxSkillTraitTags === []) {
+            return $this->loadStudentTags($studentUserId);
+        }
+
+        $rows = StudentTag::query()
+            ->where('student_user_id', $studentUserId)
+            ->where('is_active', true)
+            ->with('tag:id,tag_type')
+            ->get();
+
+        /** @var array<int, int> $weightsByTagId */
+        $weightsByTagId = [];
+
+        foreach ($rows as $row) {
+            $tagType = $row->tag?->tag_type;
+            if (in_array($tagType, ['skill', 'trait'], true)) {
+                continue;
+            }
+            $weightsByTagId[(int) $row->tag_id] = (int) ($row->weight ?? (int) config('matching.default_student_weight', 3));
+        }
+
+        // Sandbox overrides (skill/trait only, validated upstream)
+        foreach ($sandboxSkillTraitTags as $dto) {
+            if ($dto instanceof StudentTagDTO) {
+                $weightsByTagId[$dto->tagId] = $dto->weight;
+            }
+        }
+
+        $result = [];
+        foreach ($weightsByTagId as $tagId => $weight) {
+            $result[] = new StudentTagDTO(tagId: (int) $tagId, weight: (int) $weight);
+        }
+
+        return $result;
+    }
+
+    /**
      * Load vacancy requirements (tags) for a given vacancy.
      *
      * @return VacancyTagDTO[]

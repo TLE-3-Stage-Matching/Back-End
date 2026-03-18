@@ -51,6 +51,8 @@ Matching and validation edge cases (e.g. vacancy with no must-haves, score clamp
 - **Auth:** API key in `X-API-KEY` header for all requests; JWT in `Authorization: Bearer <token>` for protected routes.
 - **Roles:** Coordinator (register, companies, users, vacancies, match scores, assignments); Company (own company, profile, vacancies, comments); Student (profile, experiences, preferences, tags, languages, favorites, saved vacancies, vacancy matching).
 
+If you open your `APP_URL` in a browser, you’ll find **extensive API documentation** and guidance for **API key generation** for local/dev usage.
+
 **Full v2 API reference:** [docs/API-v2.md](docs/API-v2.md).
 
 ## Testing

@@ -87,5 +87,6 @@ This document covers local installation, production deployment, and the matching
 
 - **Implementation:** Student–vacancy matching is implemented in-app by [VacancyMatchingService](../app/Matching/VacancyMatchingService.php). It is **tag-based**: student tags (with weight 1–5) are compared to vacancy requirements (must_have / nice_to_have, importance 1–5). The formula uses sub-scores S_MH and S_NTH, a combined tag score, a must-have penalty, and clamps the final score between 0 and 100.
 - **No external AI:** There is no external AI or LLM service to deploy. Matching is computed **on demand** when students or coordinators request vacancies with scores.
+- **Sandbox (what-if) matching:** Students can simulate match results by sending temporary **skill**/**trait** tags to the sandbox endpoints. This does **not** write to the database; the student's profile stays intact.
 - **Database:** The schema includes `ai_runs`, `ai_prompts`, and `ai_criteria_versions` for future batch or versioned runs; the live match scores are not persisted to `match_vacancy_scores` in the current flow.
 - **If you add an external AI/LLM later:** Document the new service, env vars (e.g. API key, model ID), and any deployment steps (e.g. background jobs that call the model and write to `match_vacancy_scores`) in this file and in the README.

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\StageCoordinatorUserController;
 use App\Http\Controllers\Api\Student\StudentMatchScoreController;
 use App\Http\Controllers\Api\Student\StudentProfileController;
 use App\Http\Controllers\Api\Student\StudentVacancyMatchController;
+use App\Http\Controllers\Api\Student\StudentSandboxMatchController;
 use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\Api\LanguageLevelController;
 use App\Http\Controllers\Api\TagController;
@@ -149,6 +150,10 @@ Route::prefix('v2')->middleware('api-key')->group(function () {
             Route::get('student/vacancies/with-scores', [StudentVacancyMatchController::class, 'withScores']);
             Route::get('student/vacancies/{vacancy}', [StudentVacancyMatchController::class, 'show']);
             Route::get('student/vacancies/{vacancy}/detail', [StudentVacancyMatchController::class, 'detail']);
+            Route::post('student/sandbox/top-matches', [StudentSandboxMatchController::class, 'topMatches']);
+            Route::post('student/sandbox/vacancies/with-scores', [StudentSandboxMatchController::class, 'withScores']);
+            Route::post('student/sandbox/vacancies/{vacancy}', [StudentSandboxMatchController::class, 'show']);
+            Route::post('student/sandbox/vacancies/{vacancy}/detail', [StudentSandboxMatchController::class, 'detail']);
             Route::get('student/vacancies-with-scores', [StudentMatchScoreController::class, 'vacanciesWithScores']);
             Route::get('student/match-choices', [StudentMatchChoiceController::class, 'index']);
             Route::post('student/match-choices', [StudentMatchChoiceController::class, 'store']);
