@@ -28,6 +28,7 @@ This project is a Laravel API that supports **student–vacancy matching**: stud
 ## Data model
 
 The database is described in DBML; entity groups and relationships are documented in [docs/DATA-MODEL.md](docs/DATA-MODEL.md). You can view an ERD by importing [docs/schema.dbml](docs/schema.dbml) into [dbdiagram.io](https://dbdiagram.io).
+Alternatively you can view it at [complete ERD in dbdiagram.io](https://dbdiagram.io/d/De-Ballenbak-van-TLE3-Team4-69a58819a3f0aa31e186ba80).
 
 ## Installation & deployment
 

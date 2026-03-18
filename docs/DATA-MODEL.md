@@ -1,6 +1,53 @@
 # Data model (ERD)
 
 This document summarizes the main entity groups and key relationships. The full schema is defined in DBML: **[schema.dbml](schema.dbml)**. You can view an ERD by importing that file into [dbdiagram.io](https://dbdiagram.io).
+Alternatively you can view it at [complete ERD in dbdiagram.io](https://dbdiagram.io/d/De-Ballenbak-van-TLE3-Team4-69a58819a3f0aa31e186ba80).
+
+## Diagram (used tables)
+
+```mermaid
+erDiagram
+  users ||--o{ api_keys : has
+
+  users ||--o| student_profiles : owns
+  users ||--o{ student_experiences : has
+  users ||--o{ student_tags : has
+  tags  ||--o{ student_tags : assigned
+  users ||--o| student_preferences : has
+
+  users ||--o{ student_languages : speaks
+  languages ||--o{ student_languages : language
+  language_levels ||--o{ student_languages : level
+
+  companies ||--o{ company_locations : has
+  tags ||--o{ companies : industry_tag
+  users ||--o| company_users : is
+  companies ||--o{ company_users : employs
+
+  companies ||--o{ vacancies : posts
+  company_locations ||--o{ vacancies : location
+  vacancies ||--o{ vacancy_requirements : needs
+  tags ||--o{ vacancy_requirements : required
+
+  users ||--o{ student_favorite_companies : favorites
+  companies ||--o{ student_favorite_companies : favorited_by
+
+  users ||--o{ student_saved_vacancies : saves
+  vacancies ||--o{ student_saved_vacancies : saved_by
+
+  users ||--o{ student_match_choices : makes
+  vacancies ||--o{ student_match_choices : chosen_for
+
+  users ||--o{ match_flags : raises
+  companies ||--o{ match_flags : relates_to
+  vacancies ||--o{ match_flags : relates_to
+
+  users ||--o{ student_coordinator_assignments : student
+  users ||--o{ student_coordinator_assignments : coordinator
+
+  vacancies ||--o{ vacancy_comments : has
+  users ||--o{ vacancy_comments : writes
+```
 
 ## Entity groups
 
@@ -65,5 +112,13 @@ This document summarizes the main entity groups and key relationships. The full 
 - **ai_runs** → **ai_prompts**, **ai_criteria_versions**, **users**; **match_vacancy_scores** → **ai_runs**, **users**, **vacancies**; **match_vacancy_factors** → **match_vacancy_scores**, **tags**.
 - **match_flags**, **bias_alerts**, **match_overrides** → users, companies, vacancies as applicable; **manual_placements** → student user, coordinator user; **student_match_choices** → student user, vacancy, optional **ai_runs** / **match_vacancy_scores**, **users** (decided_by); **student_coordinator_assignments** → student user, coordinator user.
 - **conversations** → vacancy, company, users (student, admin, created_by); **messages** → **conversations**, **users** (sender).
+
+## Excluded (unused today)
+
+These tables exist in the schema and have models, but are **not shown in the Mermaid diagram** because they currently have **no API routes/controllers** using them.
+
+- **AI / batch runs & persisted scores**: `ai_prompts`, `ai_runs`, `ai_criteria_versions`, `ai_criteria_rules`, `match_vacancy_scores`, `match_vacancy_factors`
+- **Messaging**: `conversations`, `messages`
+- **Coordination extensions**: `bias_alerts`, `match_overrides`, `manual_placements`
 
 For column-level detail and indexes, see **[schema.dbml](schema.dbml)**.
